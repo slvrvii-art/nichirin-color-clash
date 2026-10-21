@@ -299,9 +299,9 @@
       "used": false
     },
     "assets/fighters/tanjiro_full.png": {
-      "path": "/manus-storage/game/sha256/e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e.png",
-      "sha256": "sha256:e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e",
-      "size": 1127208,
+      "path": "/manus-storage/game/sha256/72c8b848692d2e4528691f263d068ad477d56030f441b7aa8ca1295b21d28c4b.png",
+      "sha256": "sha256:72c8b848692d2e4528691f263d068ad477d56030f441b7aa8ca1295b21d28c4b",
+      "size": 1231024,
       "assetType": "image",
       "groupId": "character-cards",
       "used": false

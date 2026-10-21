@@ -572,15 +572,29 @@
       "origin": "unknown",
       "referenceEvidence": [],
       "regions": [],
-      "sha256": "sha256:e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e",
+      "sha256": "sha256:72c8b848692d2e4528691f263d068ad477d56030f441b7aa8ca1295b21d28c4b",
       "shipped": true,
-      "size": 1127208,
+      "size": 1231024,
       "source": {},
       "status": "present",
       "transformations": [],
       "useEvidence": [],
       "used": false,
-      "usedBy": []
+      "usedBy": [],
+      "versions": {
+        "sha256:e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e": {
+          "generator": {},
+          "inputs": [],
+          "license": {},
+          "origin": "unknown",
+          "regions": [],
+          "sha256": "sha256:e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e",
+          "size": 1127208,
+          "source": {},
+          "transformations": [],
+          "usedBy": []
+        }
+      }
     },
     "assets/fighters/tanjiro_hinokami.png": {
       "declaredUseEvidence": [],
@@ -3620,6 +3634,24 @@
       "useEvidence": [],
       "used": false,
       "usedBy": []
+    },
+    "source-art/tanjiro_full_water.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:f1e137b294b0e213f8970414d7b9568ad60b9563f4b72f4b2ca1ca50bb821de2",
+      "shipped": true,
+      "size": 6492251,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
     }
   },
   "discoveries": {},
@@ -3667,9 +3699,9 @@
         ]
       }
     ],
-    "pckSha256": "sha256:c7344e6e4193b9eaca80019b8b958cb8ab2ea9f6e7ce4bdd04c3536110a3107d",
+    "pckSha256": "sha256:3dc1cd65bd0b4dbba16a62cabe860035cc36721107cb632d8d55197679901a80",
     "profile": "release",
-    "sourceFingerprint": "sha256:1a21f5bf1d512481a1afc61df3a808a07c3d17d9edfd830f5323fcdc83a76b24"
+    "sourceFingerprint": "sha256:3b0ee185518b65febefc77607c20e06a101d4602867ff8740f6e77ba2e88f1bf"
   },
   "procedures": {},
   "summary": {
@@ -3702,8 +3734,8 @@
     },
     "files": {
       "downloaded": 0,
-      "retained": 176,
-      "shipped": 175,
+      "retained": 177,
+      "shipped": 176,
       "used": 87
     },
     "origins": {
@@ -3738,8 +3770,8 @@
         "used": 1
       },
       "unknown": {
-        "retained": 174,
-        "shipped": 173,
+        "retained": 175,
+        "shipped": 174,
         "used": 85
       }
     },
