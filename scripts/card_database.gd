@@ -221,7 +221,7 @@ static func _append_fighter(cards: Array[Dictionary], spec: Dictionary) -> void:
 	elif surge: text = "Standalone SURGE: play it directly. Awards 2 points when defeated."
 	else: text = "Normal fighter."
 	cards.append({"id":str(spec.id),"number":cards.size()+1,"name":str(spec.name),"short":str(spec.get("short",spec.name)),
-		"form":"SURGE" if surge else "Normal","kind":"Fighter","color":str(spec.color),"hp":int(spec.hp),"surge":surge,
+		"form":"SURGE" if surge else "Normal","kind":"Fighter","retreat_cost":2 if surge else 1,"color":str(spec.color),"hp":int(spec.hp),"surge":surge,
 		"rarity":"SURGE" if surge else "Normal","art":art,
 		"art_file":art+("_full" if surge and art in FULL_ART_FILES else ""),
 		"alternate":surge,"boost_from":boost_from,"boosts_to":"",

@@ -64,14 +64,55 @@ func _run() -> void:
 	await process_frame
 	expect(game.screen_name=="home","boots to game hub")
 	game.deck=DB.starter_deck()
+	# Random first player: both outcomes occur over repeated starts.
+	var firsts := {}
+	for n in range(24):
+		game._start_battle()
+		firsts[game.current_side] = true
+	expect(firsts.has(0) and firsts.has(1),"first player is random")
+	game._go("home")
+	await create_timer(0.3).timeout
+	game.first_side_override = 0
 	game._start_battle()
 	game.reduced_motion=false
-	await create_timer(0.9).timeout
+	await create_timer(2.0).timeout
 	var me: Dictionary = game.sides[0]
 	var foe: Dictionary = game.sides[1]
 	expect(not me.active.is_empty(),"opening active placed")
+	expect(not game._attach_energy(0,-1),"no Energy on the first turn")
+	game.turn_number = 2
+	me.energy_ready = true
 	expect(game._attach_energy(0,-1),"attach Color Energy")
 	expect(not game._attach_energy(0,-1),"second attachment disallowed")
+
+	# Retreat cost: Normal 1, SURGE 2, once per turn, chosen from the active fighter
+	me.active = _unit("tanjiro_normal")
+	me.bench = [_unit("giyu_surge"), _unit("murata_normal")]
+	me.retreated = false
+	expect(DB.find_card("tanjiro_normal").retreat_cost==1 and DB.find_card("tanjiro_surge").retreat_cost==2,"retreat costs Normal 1 / SURGE 2")
+	expect(not game._retreat(0,0),"retreat needs enough Energy")
+	me.active.energy = ["Blue","Blue"]
+	expect(game._retreat(0,0) and me.active.id=="giyu_surge" and me.bench[0].energy.size()==1,"Normal retreat pays 1 Energy")
+	me.active.energy = ["Blue","Blue","Blue"]
+	expect(not game._retreat(0,1),"only one retreat per turn")
+	me.retreated = false
+	expect(game._retreat(0,1) and me.bench[1].energy.size()==1,"SURGE retreat pays 2 Energy")
+	game.retreat_targeting = true
+	expect(game._is_target_option(0,0) and not game._is_target_option(1,0),"retreat targets your bench")
+	game.retreat_targeting = false
+
+	# Boost timing: not on the turn the Normal card was played
+	me.active = _unit("murata_normal")
+	me.bench = []
+	me.retreated = false
+	me.hand = [_unit("giyu_normal"), _unit("giyu_surge")]
+	expect(game._play_card(0,0),"bench Giyu")
+	expect(not game._boost(0,0,0),"cannot Boost on the turn played")
+	game.turn_number += 1
+	expect(game._boost(0,0,0) and me.bench[0].id=="giyu_surge","Boost next turn")
+	me.bench[0]["played_turn"] = game.turn_number
+	me.bench[0]["boost_now"] = true
+	expect(game._boost_ready(0,0),"card effect may allow Boosting immediately")
 
 	# Boost: SURGE needs its Normal in play; keeps energy and damage
 	me.active = _unit("tanjiro_normal")
@@ -222,7 +263,7 @@ func _run() -> void:
 	game._go("home")
 	await create_timer(0.9).timeout
 	game._start_battle()
-	await create_timer(0.9).timeout
+	await create_timer(2.0).timeout
 	game._end_turn_requested()
 	await create_timer(0.1).timeout
 	expect(game.current_side==1,"explicit End Turn changes side")
@@ -230,6 +271,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] 150 cards, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
+		print("[SMOKE_PASS] 150 cards, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
 		quit(0)
 	else: quit(1)

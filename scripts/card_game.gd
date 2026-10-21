@@ -59,6 +59,9 @@ var damage_animations := 0
 var turn_animations := 0
 var coin_flip_overrides: Array = []
 var attack_targeting := -1
+var retreat_targeting := false
+# Tests may force who goes first; -1 means a random coin flip.
+var first_side_override := -1
 var pending_boost_flash := ""
 var boost_animations := 0
 
@@ -295,7 +298,7 @@ func _card_detail(id: String) -> void:
 		else: form_line = "NORMAL  •  BASIC ART"+("  •  BOOSTS TO SURGE" if str(card.boosts_to)!="" else "")
 	_text(box,form_line,Rect2(363,92,430,24),12,GOLD,MEDIUM)
 	var color_line: String = "COLOR TYPE: "+str(card.color).to_upper()
-	if card.kind == "Fighter": color_line += "   •   %d HP" % int(card.hp)
+	if card.kind == "Fighter": color_line += "   •   %d HP   •   RETREAT %d ENERGY" % [int(card.hp),int(card.get("retreat_cost",1))]
 	_text(box,color_line,Rect2(364,120,418,24),12,DB.color_for(str(card.color)))
 	var y := 154
 	if str(card.get("ability_id",""))!="":
@@ -361,7 +364,8 @@ func _start_battle() -> void:
 		return
 	generation += 1
 	sides = [_new_side(deck),_new_side(DB.enemy_deck())]
-	current_side = 0
+	# A coin flip decides who takes the first turn.
+	current_side = first_side_override if first_side_override >= 0 else rng.randi_range(0,1)
 	turn_number = 1
 	busy = false
 	paused = false
@@ -371,13 +375,23 @@ func _start_battle() -> void:
 	ability_targeting = false
 	ability_source = -2
 	attack_targeting = -1
+	retreat_targeting = false
 	pending_boost_flash = ""
-	battle_log = ["Duel begins. First to 3 knockout points wins."]
+	battle_log = ["Duel begins. First to 3 knockout points wins.", "Coin flip: "+("you go first." if current_side==0 else "your rival goes first.")+" No Energy can be attached on the first turn."]
 	screen_name = "battle"
 	notice = "Select a fighter, attach Color Energy, then attack."
-	_begin_turn(0)
+	_begin_turn(current_side)
 	_render()
-	_turn_banner("YOUR TURN",0)
+	_opening_sequence(generation)
+func _opening_sequence(token: int) -> void:
+	busy = true
+	await _turn_banner("COIN FLIP  •  "+("YOU GO FIRST" if current_side==0 else "RIVAL GOES FIRST"),current_side,1.2)
+	if generation != token: return
+	await _wait_unpaused(token)
+	if generation != token: return
+	busy = false
+	_render()
+	if current_side == 1: _ai_turn(token)
 
 func _begin_turn(side_index: int) -> void:
 	var side: Dictionary = sides[side_index]
@@ -480,7 +494,7 @@ func _battle() -> void:
 	for i in range(hand.size()):
 		var rect := Rect2(155+i*(width+7),742,width,128)
 		var node := _card(root_ui,hand[i],rect,func():
-			if _can_act(0): selected_hand=i; selected_board=-1; attack_targeting=-1; ability_targeting=false; _render(),true)
+			if _can_act(0): selected_hand=i; selected_board=-1; attack_targeting=-1; ability_targeting=false; retreat_targeting=false; _render(),true)
 		if selected_hand==i: node.modulate=Color(1.15,1.12,0.9)
 	_battle_actions()
 	if battle_over: _result_modal()
@@ -529,8 +543,12 @@ func _battle_actions() -> void:
 	var me: Dictionary = sides[0]
 	if selected_board >= me.bench.size(): selected_board = -1
 	_text(root_ui,"YOUR TURN" if current_side==0 else "RIVAL'S TURN",Rect2(1131,157,248,30),20,GOLD if current_side==0 else RED,DISPLAY)
-	_text(root_ui,"Resolving…" if busy else "Plan your next move.",Rect2(1132,195,250,24),12,MUTED)
-	if attack_targeting >= 0 and not me.active.is_empty():
+	_text(root_ui,"Resolving…" if busy else "Attacking ends your turn.",Rect2(1132,195,250,24),12,MUTED)
+	if retreat_targeting and not me.active.is_empty():
+		_text(root_ui,"Retreat",Rect2(1131,245,246,58),20,CREAM,DISPLAY)
+		_text(root_ui,"Pay %d Energy from %s, then choose a bench fighter to switch into the active spot." % [_retreat_cost(me.active),me.active.short],Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_button(root_ui,"CANCEL",Rect2(1132,404,245,40),func(): retreat_targeting=false; _render(),false,11)
+	elif attack_targeting >= 0 and not me.active.is_empty():
 		var a: Dictionary = me.active.attacks[attack_targeting]
 		_text(root_ui,str(a.name),Rect2(1131,245,246,58),20,CREAM,DISPLAY)
 		_text(root_ui,"Choose any one of your opponent's fighters (active or bench) to take %d damage." % int(a.damage),Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
@@ -546,8 +564,11 @@ func _battle_actions() -> void:
 				_text(root_ui,"No matching Normal card in play to Boost.",Rect2(1132,474,245,40),12,RED,MEDIUM,HORIZONTAL_ALIGNMENT_LEFT,true)
 			for j in range(targets.size()):
 				var target_index: int = targets[j]
-				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1)),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),true,12)
-				boost_button.disabled = not _can_act(0)
+				var ready: bool = _boost_ready(0,target_index)
+				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1))+("" if ready else "  •  NEXT TURN"),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),ready,12 if ready else 10)
+				boost_button.disabled = not _can_act(0) or not ready
+			if not targets.is_empty() and not _boost_ready(0,int(targets[0])) and targets.size()==1:
+				_text(root_ui,"A fighter can't Boost on the turn it was played.",Rect2(1132,512,245,36),11,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 		else:
 			var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
 			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
@@ -563,8 +584,8 @@ func _battle_actions() -> void:
 		var attach := _button(root_ui,"ATTACH "+str(me.energy_color).to_upper()+"  +",Rect2(1131,388,246,45),func():
 			if _attach_energy(0,selected_board): _render(),false,12)
 		attach.add_theme_color_override("font_color",DB.color_for(str(me.energy_color)))
-		attach.disabled = not _can_act(0) or not me.energy_ready or ability_targeting
-		_text(root_ui,"Once per turn • "+("available" if me.energy_ready else "attached"),Rect2(1132,440,245,23),11,MUTED)
+		attach.disabled = not _can_act(0) or not me.energy_ready or ability_targeting or turn_number == 1
+		_text(root_ui,"No Energy on the first turn" if turn_number == 1 else "Once per turn • "+("available" if me.energy_ready else "attached"),Rect2(1132,440,245,23),11,MUTED)
 		var action_y := 493
 		if str(unit.get("ability_id","")) != "":
 			action_y = 558
@@ -587,11 +608,12 @@ func _battle_actions() -> void:
 				var status_tag: String = ("  •  "+str(a.status).to_upper()) if str(a.get("status",""))!="" else ""
 				var attack_button := _button(root_ui,"%s   %d\n%s%s" % [a.name,a.damage,_cost_text(str(unit.color),a),status_tag],Rect2(1131,action_y+i*58,246,52),func(): _player_attack(i),_attack_legal(0,i),9)
 				attack_button.disabled=not _can_act(0) or not _attack_legal(0,i) or ability_targeting
+			var retreat_y: int = action_y+unit.attacks.size()*58+4
+			var cost: int = _retreat_cost(unit)
+			var retreat := _button(root_ui,"RETREAT   •   COST %d ENERGY" % cost+("   (USED)" if me.retreated else ""),Rect2(1131,retreat_y,246,40),func(): retreat_targeting=true; _render(),false,10)
+			retreat.disabled=not _can_act(0) or not _can_retreat(0) or ability_targeting
 		else:
-			var retreat := _button(root_ui,"SWITCH TO ACTIVE\nCOST: 1 ACTIVE ENERGY",Rect2(1131,action_y+12,246,60),func():
-				if _retreat(0,selected_board): selected_board=-1; _render(),false,11)
-			retreat.disabled=not _can_act(0) or me.retreated or me.active.energy.is_empty() or ability_targeting or me.active.get("statuses",[]).has("Sleep")
-		_text(root_ui,"Attacking ends your turn. Costs list\nthe Energy that must match the Color.",Rect2(1132,678,245,46),10,MUTED)
+			_text(root_ui,"Benched fighters enter the active spot when your active fighter retreats (Normal: 1 Energy, SURGE: 2 Energy, once per turn).",Rect2(1132,action_y+8,245,70),11,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	var end := _button(root_ui,"END TURN   →",Rect2(1130,734,247,49),func(): _end_turn_requested(),true,14)
 	end.disabled=not _can_act(0)
 	_button(root_ui,"PAUSE / LEAVE",Rect2(1130,798,247,33),_pause_menu,false,10)
@@ -653,6 +675,8 @@ func _attach_energy(side_index: int, target: int) -> bool:
 	if not _can_act(side_index): return false
 	var side: Dictionary = sides[side_index]
 	if not side.energy_ready: return false
+	# The player who goes first cannot attach Energy on the duel's first turn.
+	if turn_number == 1: return false
 	if target>=side.bench.size(): return false
 	var unit: Dictionary = side.active if target<0 else side.bench[target]
 	unit.energy.append(side.energy_color)
@@ -670,6 +694,7 @@ func _play_card(side_index: int, index: int) -> bool:
 		if not DB.is_basic(card): return false
 		if side.bench.size()>=3: return false
 		side.hand.remove_at(index)
+		card["played_turn"] = turn_number
 		side.bench.append(card)
 		_log(str(card.name)+" joins the bench.")
 	else:
@@ -712,20 +737,27 @@ func _player_play() -> void:
 		selected_hand=-1
 		_render()
 
+# Retreat cost: Normal fighters pay 1 Energy, SURGE fighters pay 2. Once per turn.
+func _retreat_cost(unit: Dictionary) -> int:
+	return int(unit.get("retreat_cost",2 if bool(unit.get("surge",false)) else 1))
+func _can_retreat(side_index: int) -> bool:
+	var side: Dictionary = sides[side_index]
+	if side.retreated or side.active.is_empty() or side.bench.is_empty(): return false
+	if side.active.get("statuses",[]).has("Sleep"): return false
+	return side.active.energy.size() >= _retreat_cost(side.active)
 func _retreat(side_index: int, bench_index: int) -> bool:
 	if not _can_act(side_index): return false
 	var side: Dictionary = sides[side_index]
-	if side.retreated or side.active.energy.is_empty() or bench_index<0 or bench_index>=side.bench.size(): return false
-	if side.active.get("statuses",[]).has("Sleep"): return false
-	side.active.energy.pop_back()
+	if not _can_retreat(side_index) or bench_index<0 or bench_index>=side.bench.size(): return false
+	var cost: int = _retreat_cost(side.active)
+	for i in range(cost): side.active.energy.pop_back()
 	var previous: Dictionary = side.active
 	for retreat_status in ["Poison","Burn","Paralysis"]: previous.get("statuses",[]).erase(retreat_status)
 	side.active=side.bench[bench_index]
 	side.bench[bench_index]=previous
 	side.retreated=true
-	_log(str(side.active.name)+" becomes active.")
+	_log("%s retreats (paid %d Energy). %s becomes active." % [previous.short,cost,side.active.name])
 	return true
-
 func _attack_legal(side_index: int, attack_index: int) -> bool:
 	if sides.is_empty(): return false
 	var unit: Dictionary = sides[side_index].active
@@ -887,6 +919,7 @@ func _finish_turn() -> void:
 	ability_targeting = false
 	ability_source = -2
 	attack_targeting = -1
+	retreat_targeting = false
 	current_side=1-current_side
 	turn_number+=1
 	selected_hand=-1
@@ -905,7 +938,7 @@ func _finish_turn() -> void:
 	_render()
 	if current_side==1: _ai_turn(token)
 
-func _turn_banner(message: String, side_index: int) -> void:
+func _turn_banner(message: String, side_index: int, hold: float = 0.5) -> void:
 	turn_animations+=1
 	var banner := _panel(root_ui,Rect2(150,382,940,66),Color("#e5c887") if side_index==0 else Color("#c75147"),Color.TRANSPARENT,4)
 	banner.z_index=60
@@ -913,7 +946,7 @@ func _turn_banner(message: String, side_index: int) -> void:
 	banner.modulate.a=0
 	var tween := create_tween()
 	tween.tween_property(banner,"modulate:a",1.0,0.15)
-	tween.tween_interval(0.5 if not reduced_motion else 0.2)
+	tween.tween_interval(hold if not reduced_motion else 0.2)
 	tween.tween_property(banner,"modulate:a",0.0,0.2)
 	await tween.finished
 	if is_instance_valid(banner): banner.queue_free()
@@ -932,8 +965,8 @@ func _ai_turn(token: int) -> void:
 		if i < side.hand.size() and DB.is_basic(side.hand[i]) and side.bench.size()<3: _play_card(1,i)
 	for i in range(side.hand.size()-1,-1,-1):
 		if i >= side.hand.size(): continue
-		var targets: Array = _boost_targets(1,i)
-		if not targets.is_empty(): _boost(1,i,int(targets[0]))
+		for target in _boost_targets(1,i):
+			if _boost(1,i,int(target)): break
 	for i in range(side.hand.size()-1,-1,-1):
 		if i >= side.hand.size(): continue
 		if side.hand[i].kind=="Item" or (side.hand[i].kind=="Support" and not side.support_used): _play_card(1,i)
@@ -994,9 +1027,10 @@ func _poison_bonus(victim_side: int) -> int:
 	return 0
 
 func _targeting() -> bool:
-	return ability_targeting or attack_targeting >= 0
+	return ability_targeting or attack_targeting >= 0 or retreat_targeting
 
 func _is_target_option(side_index: int, index: int) -> bool:
+	if retreat_targeting: return side_index == 0 and index >= 0 and index < sides[0].bench.size()
 	if side_index != 1: return false
 	if attack_targeting >= 0: return _attack_target_options(0).has(index)
 	if ability_targeting: return _ability_target_options(0,ability_source).has(index)
@@ -1004,6 +1038,12 @@ func _is_target_option(side_index: int, index: int) -> bool:
 
 func _board_clicked(side_index: int, index: int) -> void:
 	if not _can_act(0): return
+	if retreat_targeting:
+		if _is_target_option(side_index,index) and _retreat(0,index):
+			retreat_targeting = false
+			selected_board = -1
+			_render()
+		return
 	if attack_targeting >= 0:
 		if _is_target_option(side_index,index):
 			var attack_index: int = attack_targeting
@@ -1043,9 +1083,18 @@ func _boost_targets(side_index: int, hand_index: int) -> Array:
 		if str(side.bench[i].id)==from_id: result.append(i)
 	return result
 
+# A fighter cannot Boost on the turn it was played, unless a card effect grants "boost_now".
+func _boost_ready(side_index: int, target_index: int) -> bool:
+	var side: Dictionary = sides[side_index]
+	if target_index >= side.bench.size(): return false
+	var base: Dictionary = side.active if target_index<0 else side.bench[target_index]
+	if base.is_empty(): return false
+	if bool(base.get("boost_now",false)): return true
+	return int(base.get("played_turn",0)) < turn_number
 func _boost(side_index: int, hand_index: int, target_index: int) -> bool:
 	if not _can_act(side_index): return false
 	if not _boost_targets(side_index,hand_index).has(target_index): return false
+	if not _boost_ready(side_index,target_index): return false
 	var side: Dictionary = sides[side_index]
 	var surge: Dictionary = side.hand[hand_index]
 	var base: Dictionary = side.active if target_index<0 else side.bench[target_index]
@@ -1057,6 +1106,7 @@ func _boost(side_index: int, hand_index: int, target_index: int) -> bool:
 	surge["statuses"] = []
 	surge["ability_used"] = false
 	surge["boosted_from"] = base
+	surge["played_turn"] = int(base.get("played_turn",0))
 	side.hand.remove_at(hand_index)
 	if target_index<0: side.active = surge
 	else: side.bench[target_index] = surge
@@ -1128,7 +1178,7 @@ func _result_modal() -> void:
 func _rules() -> void:
 	var box := _modal_box(Rect2(379,94,835,726))
 	_text(box,"THE WAY OF THE BLADE",Rect2(35,30,765,47),29,CREAM,DISPLAY)
-	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one active fighter and exactly three bench spots. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. Standalone SURGE cards (with no Normal version) are played straight to the bench.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn by paying one Energy.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
+	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one active fighter and exactly three bench spots. A coin flip decides who goes first, and no Energy can be attached on the duel's first turn. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. A fighter can't Boost on the turn it was played unless a card effect says otherwise. Standalone SURGE cards (with no Normal version) are played straight to the bench.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn: discard Energy from your active fighter (Normal 1, SURGE 2) and switch it with a benched fighter.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
 	_text(box,rules,Rect2(37,92,760,560),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	_button(box,"DRAW YOUR BLADE",Rect2(35,660,765,43),_close_modal,true,13)
 

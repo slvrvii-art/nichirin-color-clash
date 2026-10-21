@@ -15,3 +15,10 @@
 - [x] New fighters: Murata, Kyogai SURGE, Aoi Kanzaki, Susamaru (Normal + SURGE), Yahaba, Tanjiro (Hinokami Kagura) SURGE.
 - [x] Gold metallic gradient SURGE wordmark in the Bungee font.
 - [x] Tests, native renders and checkpoint.
+
+## Rules update 2
+- [x] Random first player (coin-flip banner).
+- [x] No Energy attachment on the duel's first turn.
+- [x] No Boost on the turn a fighter was played (card effects may override via boost_now).
+- [x] Retreat cost: Normal 1 Energy, SURGE 2; once per turn; started from the active fighter.
+- [x] Normal art fits inside its frame without clipping.

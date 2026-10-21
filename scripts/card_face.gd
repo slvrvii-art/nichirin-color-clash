@@ -37,14 +37,37 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 	var h := dimensions.y
 	var s := w/200.0
 	var art_path: String = "res://assets/support/"+str(data.art)+".png" if data.kind in ["Support","Item"] else "res://assets/fighters/"+str(data.get("art_file",data.art))+".png"
-	var image := TextureRect.new()
-	image.texture = texture(art_path)
-	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	image.position = Vector2(4,4 if full_art else 48*s)
-	image.size = Vector2(w-8,h-8 if full_art else h*0.48)
-	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(image)
+	var art_texture := texture(art_path)
+	if full_art:
+		var image := TextureRect.new()
+		image.texture = art_texture
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		image.position = Vector2(4,4)
+		image.size = Vector2(w-8,h-8)
+		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(image)
+	else:
+		# Basic art fits entirely inside its window: a dimmed fill behind, the whole picture in front.
+		var window_pos := Vector2(4,48*s)
+		var window_size := Vector2(w-8,h*0.65-48*s)
+		var backdrop := TextureRect.new()
+		backdrop.texture = art_texture
+		backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		backdrop.position = window_pos
+		backdrop.size = window_size
+		backdrop.modulate = Color(0.32,0.34,0.4)
+		backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(backdrop)
+		var image := TextureRect.new()
+		image.texture = art_texture
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		image.position = window_pos+Vector2(0,2*s)
+		image.size = window_size-Vector2(0,4*s)
+		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(image)
 	var header := ColorRect.new()
 	header.color = Color(0.025,0.045,0.075,0.62 if full_art else 0.85)
 	header.position = Vector2(4,4)
@@ -68,11 +91,27 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 	add_child(bottom)
 	var form_label: String = str(data.form).to_upper()
 	if data.kind == "Fighter":
-		if full_art: form_label = "BOOST FROM NORMAL" if str(data.get("boost_from",""))!="" else "STANDALONE"
+		if full_art: form_label = "BOOST" if str(data.get("boost_from",""))!="" else "STANDALONE"
 		else: form_label = "NORMAL"
 	if str(data.get("ability_id",""))!="": form_label += "  •  ABILITY"
-	label_at(form_label,Vector2(10,h*0.66),Vector2(w-20,16*s),9*s,border)
+	label_at(form_label,Vector2(10,h*0.66),Vector2(w-20-30*s,16*s),9*s,border)
 	if data.kind == "Fighter":
+		# Retreat cost pips (colorless Energy) at the right of the form row.
+		var pips: int = int(data.get("retreat_cost",2 if full_art else 1))
+		var pip_d: float = maxf(5.0,7*s)
+		for i in range(pips):
+			var pip := Panel.new()
+			var ps := StyleBoxFlat.new()
+			ps.bg_color = Color("#d9dde6")
+			ps.border_color = Color("#3a4559")
+			ps.set_border_width_all(1)
+			ps.set_corner_radius_all(int(pip_d))
+			pip.add_theme_stylebox_override("panel",ps)
+			pip.position = Vector2(w-10-(pips-i)*(pip_d+3*s),h*0.66+4*s)
+			pip.size = Vector2(pip_d,pip_d)
+			pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			pip.tooltip_text = "Retreat cost"
+			add_child(pip)
 		var attacks: Array = data.attacks
 		for i in range(attacks.size()):
 			var a: Dictionary = attacks[i]
