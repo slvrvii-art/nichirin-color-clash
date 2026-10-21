@@ -287,8 +287,9 @@ func _add_to_deck(id: String) -> void:
 		_save()
 	_render()
 
-func _card_detail(id: String) -> void:
-	var card: Dictionary = cards_by_id[id]
+# Pass an in-play unit to show its live HP, Energy and status instead of collection actions.
+func _card_detail(id: String, in_play: Dictionary = {}) -> void:
+	var card: Dictionary = cards_by_id[id] if in_play.is_empty() else in_play
 	var box := _modal_box(Rect2(390,115,820,667))
 	_card(box,card,Rect2(28,36,305,466),Callable())
 	_text(box,card.name,Rect2(362,36,430,55),24,CREAM,DISPLAY)
@@ -321,6 +322,15 @@ func _card_detail(id: String) -> void:
 				y += 84
 			else:
 				y += 56
+	if not in_play.is_empty():
+		var energy: Array = in_play.get("energy",[])
+		var statuses: Array = in_play.get("statuses",[])
+		var live := "IN PLAY   •   %d / %d HP" % [int(in_play.get("current_hp",card.hp)),int(card.hp)]
+		live += "\nENERGY: "+(", ".join(energy).to_upper() if not energy.is_empty() else "NONE")
+		live += "\nSTATUS: "+(", ".join(statuses).to_upper() if not statuses.is_empty() else "NONE")
+		_text(box,live,Rect2(364,520,420,66),12,CREAM,MEDIUM,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_button(box,"CLOSE",Rect2(600,592,180,43),_close_modal,true,12)
+		return
 	if str(card.get("boosts_to",""))!="":
 		var surge_id: String = str(card.boosts_to)
 		_button(box,"VIEW SURGE FORM  →",Rect2(363,532,219,40),func(): _card_detail(surge_id),false,11)
@@ -1037,6 +1047,14 @@ func _is_target_option(side_index: int, index: int) -> bool:
 	return false
 
 func _board_clicked(side_index: int, index: int) -> void:
+	# Opponent fighters in play can be inspected at any time unless you are choosing a target.
+	if side_index == 1 and not _targeting() and screen_name == "battle":
+		var foe: Dictionary = sides[1]
+		var unit: Dictionary = foe.active if index<0 else (foe.bench[index] if index<foe.bench.size() else {})
+		if not unit.is_empty():
+			_card_detail(str(unit.id),unit)
+			paused = true
+		return
 	if not _can_act(0): return
 	if retreat_targeting:
 		if _is_target_option(side_index,index) and _retreat(0,index):

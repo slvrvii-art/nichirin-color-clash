@@ -22,3 +22,8 @@
 - [x] No Boost on the turn a fighter was played (card effects may override via boost_now).
 - [x] Retreat cost: Normal 1 Energy, SURGE 2; once per turn; started from the active fighter.
 - [x] Normal art fits inside its frame without clipping.
+
+## UI update
+- [x] Opponent cards in play open a detail view (live HP, Energy, status); the duel pauses while it is open.
+- [x] Ability names shown on every card that has an ability.
+- [x] Full-art SURGE cards no longer have dark translucent bands; text uses an outline instead.

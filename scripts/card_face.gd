@@ -43,8 +43,8 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		image.texture = art_texture
 		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		image.position = Vector2(4,4)
-		image.size = Vector2(w-8,h-8)
+		image.position = Vector2(3,3)
+		image.size = Vector2(w-6,h-6)
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(image)
 	else:
@@ -68,12 +68,14 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		image.size = window_size-Vector2(0,4*s)
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(image)
-	var header := ColorRect.new()
-	header.color = Color(0.025,0.045,0.075,0.62 if full_art else 0.85)
-	header.position = Vector2(4,4)
-	header.size = Vector2(w-8,44*s)
-	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(header)
+	# Full-art SURGE cards have no dark bands; their text carries an outline instead.
+	if not full_art:
+		var header := ColorRect.new()
+		header.color = Color(0.025,0.045,0.075,0.85)
+		header.position = Vector2(4,4)
+		header.size = Vector2(w-8,44*s)
+		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(header)
 	var short_name: String = str(data.get("short",str(data.name).split(" ")[0]))
 	var name_size: float = 17*s
 	var name_width: float = DISPLAY.get_string_size(short_name,HORIZONTAL_ALIGNMENT_LEFT,-1,int(name_size)).x
@@ -83,17 +85,17 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 	label_at(str(data.get("hp",0))+" HP" if data.kind == "Fighter" else str(data.kind).to_upper(),Vector2(10,29)*s,Vector2(w*0.5,16*s),10*s,border)
 	if full_art:
 		surge_label(Vector2(w*0.5,27*s),Vector2(w*0.5-10*s,18*s),12.5*s)
-	var bottom := ColorRect.new()
-	bottom.color = Color(0.025,0.045,0.075,0.78 if full_art else 1.0)
-	bottom.position = Vector2(4,h*0.65)
-	bottom.size = Vector2(w-8,h*0.35-4)
-	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bottom)
+	if not full_art:
+		var bottom := ColorRect.new()
+		bottom.color = Color(0.025,0.045,0.075,1.0)
+		bottom.position = Vector2(4,h*0.65)
+		bottom.size = Vector2(w-8,h*0.35-4)
+		bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(bottom)
 	var form_label: String = str(data.form).to_upper()
 	if data.kind == "Fighter":
 		if full_art: form_label = "BOOST" if str(data.get("boost_from",""))!="" else "STANDALONE"
 		else: form_label = "NORMAL"
-	if str(data.get("ability_id",""))!="": form_label += "  •  ABILITY"
 	label_at(form_label,Vector2(10,h*0.66),Vector2(w-20-30*s,16*s),9*s,border)
 	if data.kind == "Fighter":
 		# Retreat cost pips (colorless Energy) at the right of the form row.
@@ -113,12 +115,18 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 			pip.tooltip_text = "Retreat cost"
 			add_child(pip)
 		var attacks: Array = data.attacks
+		var attack_top: float = h*0.73
+		if str(data.get("ability_id",""))!="":
+			# Ability name row, shown on every card that has one.
+			label_at("ABILITY  "+str(data.get("ability_name","")).to_upper(),Vector2(10,h*0.715),Vector2(w-20,15*s),8.5*s,Color("#f0c76a"),BODY)
+			attack_top = h*0.715+16*s
+		var row: float = 22*s if attacks.size()<2 or attack_top<=h*0.73 else 19*s
 		for i in range(attacks.size()):
 			var a: Dictionary = attacks[i]
 			var attack_label: String = str(a.name)
 			if str(a.get("status",""))!="" and w>=150: attack_label += " · "+str(a.status).to_upper()
-			label_at(attack_label,Vector2(10,h*0.73+i*22*s),Vector2(w-46,19*s),9.5*s,Color("#f7eedf"))
-			label_at(str(a.damage),Vector2(w-38,h*0.73+i*22*s),Vector2(30,19)*s,12*s,Color("#e7c57c"))
+			label_at(attack_label,Vector2(10,attack_top+i*row),Vector2(w-46,19*s),9.5*s,Color("#f7eedf"))
+			label_at(str(a.damage),Vector2(w-38,attack_top+i*row),Vector2(30,19)*s,12*s,Color("#e7c57c"))
 	else:
 		label_at(str(data.text),Vector2(10,h*0.73),Vector2(w-20,h*0.17),10*s,Color("#e7decf"),BODY,true)
 	label_at("%03d  /  %d" % [int(data.number),DB.TOTAL_CARDS],Vector2(10,h-19*s),Vector2(w*0.52,16*s),8.5*s,Color("#93a1b6"))
@@ -159,6 +167,12 @@ func label_at(value: String, pos: Vector2, dims: Vector2, font_size: float, tint
 	label.add_theme_color_override("font_color",tint)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.clip_text = not wrap
+	if full_art:
+		label.add_theme_color_override("font_outline_color",Color(0.02,0.02,0.04,0.95))
+		label.add_theme_constant_override("outline_size",maxi(2,int(font_size*0.3)))
+		label.add_theme_color_override("font_shadow_color",Color(0,0,0,0.75))
+		label.add_theme_constant_override("shadow_offset_x",1)
+		label.add_theme_constant_override("shadow_offset_y",1)
 	if wrap: label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if wrap: label.custom_minimum_size = Vector2(dims.x,0)
 	add_child(label)
