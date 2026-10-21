@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "publicationOrigin": "https://nichirin-eakw5bhv.manus.game",
+  "title": "Nichirin: Color Clash",
+  "description": "A Demon Slayer-themed card battler with 162 cards, 20-card decks, Color Energy, SURGE fighters and cinematic turn-based duels.",
+  "defaultCaptions": {
+    "x": "Draw your blade in Nichirin: Color Clash.",
+    "facebook": "Build a 20-card deck and master Color Energy in Nichirin: Color Clash.",
+    "reddit": "Nichirin: Color Clash — a fan-made Demon Slayer card battler.",
+    "discord": "Choose your fighters. Draw your blade. Nichirin: Color Clash."
+  },
+  "assets": {
+    "og": {
+      "digest": "sha256:429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db",
+      "path": "share/429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db.png",
+      "mime": "image/png",
+      "width": 1280,
+      "height": 720,
+      "sizeBytes": 1872392,
+      "sourcePath": "assets/share/og.png"
+    },
+    "favicon": {
+      "digest": "sha256:2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177",
+      "path": "share/2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177.png",
+      "mime": "image/png",
+      "width": 128,
+      "height": 128,
+      "sizeBytes": 37081,
+      "sourcePath": "assets/share/favicon.png"
+    }
+  }
+}

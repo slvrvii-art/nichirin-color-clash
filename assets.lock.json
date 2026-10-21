@@ -1,6 +1,22 @@
 {
   "version": 2,
   "groups": {
+    "character-cards": {
+      "name": "Character Cards",
+      "order": 10
+    },
+    "duel-table": {
+      "name": "Duel Table",
+      "order": 30
+    },
+    "game-identity": {
+      "name": "Game Identity",
+      "order": 40
+    },
+    "support-cards": {
+      "name": "Support Cards",
+      "order": 20
+    },
     "template": {
       "name": "Template",
       "order": 0
@@ -8,6 +24,286 @@
   },
   "bundles": {},
   "assets": {
+    "assets/fighters/akaza.png": {
+      "path": "/manus-storage/game/sha256/788a728b06dd4a938f4d03936bcf80ce6617145e1d9c37e263400db4d24b8572.png",
+      "sha256": "sha256:788a728b06dd4a938f4d03936bcf80ce6617145e1d9c37e263400db4d24b8572",
+      "size": 1026258,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/daki.png": {
+      "path": "/manus-storage/game/sha256/26c62f8d5a3c86b3cebab8b12588dce1f59b04a36db7b62db9e6e8d6a89bd110.png",
+      "sha256": "sha256:26c62f8d5a3c86b3cebab8b12588dce1f59b04a36db7b62db9e6e8d6a89bd110",
+      "size": 980590,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/doma.png": {
+      "path": "/manus-storage/game/sha256/c84cecb585021a441cde68519270a9afe5ac8dde1386f1b11c8a4c9bb9d174bd.png",
+      "sha256": "sha256:c84cecb585021a441cde68519270a9afe5ac8dde1386f1b11c8a4c9bb9d174bd",
+      "size": 1201553,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/enmu.png": {
+      "path": "/manus-storage/game/sha256/68df4104acac2ae814c38347572274097016e74012467ffbbf2dae25f5ddcb10.png",
+      "sha256": "sha256:68df4104acac2ae814c38347572274097016e74012467ffbbf2dae25f5ddcb10",
+      "size": 863875,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/genya.png": {
+      "path": "/manus-storage/game/sha256/b411318f11e23c3464a348a6b384f4b10d583ff7f6d5f38fc1a2643c28c4c9aa.png",
+      "sha256": "sha256:b411318f11e23c3464a348a6b384f4b10d583ff7f6d5f38fc1a2643c28c4c9aa",
+      "size": 907798,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/giyu.png": {
+      "path": "/manus-storage/game/sha256/355762aaa00abf52afd5ffc746e97845d552598efd9f7d6942e5938d0d84f818.png",
+      "sha256": "sha256:355762aaa00abf52afd5ffc746e97845d552598efd9f7d6942e5938d0d84f818",
+      "size": 883927,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/giyu_full.png": {
+      "path": "/manus-storage/game/sha256/81a4cc7e813cf0363bd20b28fba9ee6916db99a6aaeac44a13ababbef74d655b.png",
+      "sha256": "sha256:81a4cc7e813cf0363bd20b28fba9ee6916db99a6aaeac44a13ababbef74d655b",
+      "size": 1152901,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/gyomei.png": {
+      "path": "/manus-storage/game/sha256/9eef7498f980bd95dae1481698ccddabb463f83be6788537393048a45ba6243a.png",
+      "sha256": "sha256:9eef7498f980bd95dae1481698ccddabb463f83be6788537393048a45ba6243a",
+      "size": 1123086,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/gyutaro.png": {
+      "path": "/manus-storage/game/sha256/40c03961851462ed40b08aead0b13ae9f5b4b1e6d760520750c8787497b521c8.png",
+      "sha256": "sha256:40c03961851462ed40b08aead0b13ae9f5b4b1e6d760520750c8787497b521c8",
+      "size": 946924,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/inosuke.png": {
+      "path": "/manus-storage/game/sha256/7b7d30ece19d0b5fe1ba14e60d31a7fa659dcfcfcdb1765166061901da90fc4f.png",
+      "sha256": "sha256:7b7d30ece19d0b5fe1ba14e60d31a7fa659dcfcfcdb1765166061901da90fc4f",
+      "size": 781914,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/kanao.png": {
+      "path": "/manus-storage/game/sha256/5311520a5a6c03b640aa80cf2bccc4e726ae755ecb26b7d299d42ddd586dd418.png",
+      "sha256": "sha256:5311520a5a6c03b640aa80cf2bccc4e726ae755ecb26b7d299d42ddd586dd418",
+      "size": 1011378,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/kokushibo.png": {
+      "path": "/manus-storage/game/sha256/2891adda102be53fd0725620c2b5580843207958012bd4c7dfee0836bbee4db5.png",
+      "sha256": "sha256:2891adda102be53fd0725620c2b5580843207958012bd4c7dfee0836bbee4db5",
+      "size": 1048017,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/mitsuri.png": {
+      "path": "/manus-storage/game/sha256/a7586d5bdf425b9e047165c20e8d00ecdf72f1a1ab181f79b86174e86053ba89.png",
+      "sha256": "sha256:a7586d5bdf425b9e047165c20e8d00ecdf72f1a1ab181f79b86174e86053ba89",
+      "size": 709284,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/muichiro.png": {
+      "path": "/manus-storage/game/sha256/4f1591ee5fcabe26555d60d8b29dbc1f2625721919431071a8093b27dcdce141.png",
+      "sha256": "sha256:4f1591ee5fcabe26555d60d8b29dbc1f2625721919431071a8093b27dcdce141",
+      "size": 862632,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/muzan.png": {
+      "path": "/manus-storage/game/sha256/05321b0757fbec9113ac389d85dc900040057c8ce7e31477cabfd80c7ee4c1e8.png",
+      "sha256": "sha256:05321b0757fbec9113ac389d85dc900040057c8ce7e31477cabfd80c7ee4c1e8",
+      "size": 794456,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/nezuko.png": {
+      "path": "/manus-storage/game/sha256/9330bf6348079c086ffc9db8d7dcb8f7610884c7ed5486430fd81a86df4bd690.png",
+      "sha256": "sha256:9330bf6348079c086ffc9db8d7dcb8f7610884c7ed5486430fd81a86df4bd690",
+      "size": 872242,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/nezuko_full.png": {
+      "path": "/manus-storage/game/sha256/794414c0405edc3b5430c7e4f0433ece5e082921091c39372f84934d2ed5085a.png",
+      "sha256": "sha256:794414c0405edc3b5430c7e4f0433ece5e082921091c39372f84934d2ed5085a",
+      "size": 1036727,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/obanai.png": {
+      "path": "/manus-storage/game/sha256/eb0d168e78b0d2ce66dcd3dae13b0ad7317876b6054ee5e99c381a899f36acb9.png",
+      "sha256": "sha256:eb0d168e78b0d2ce66dcd3dae13b0ad7317876b6054ee5e99c381a899f36acb9",
+      "size": 959018,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/rengoku.png": {
+      "path": "/manus-storage/game/sha256/0b647b28b9513c3faca02d3688a534dd282f99eecc6b15cb138a236fd9146988.png",
+      "sha256": "sha256:0b647b28b9513c3faca02d3688a534dd282f99eecc6b15cb138a236fd9146988",
+      "size": 881895,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/rengoku_full.png": {
+      "path": "/manus-storage/game/sha256/43bf8da5930d4272edd827320c79f5bfab47702b9fe90bd2c71844be286aa0f8.png",
+      "sha256": "sha256:43bf8da5930d4272edd827320c79f5bfab47702b9fe90bd2c71844be286aa0f8",
+      "size": 1016330,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/rui.png": {
+      "path": "/manus-storage/game/sha256/969abfd6a67e4ea1ba2ed4c969987d79958dadda08140a01d414aea4959c3bdd.png",
+      "sha256": "sha256:969abfd6a67e4ea1ba2ed4c969987d79958dadda08140a01d414aea4959c3bdd",
+      "size": 898826,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/sanemi.png": {
+      "path": "/manus-storage/game/sha256/1708261a163b3a15d60e2b0d4de09f9d035aefd53c22f9a42e96b22106016233.png",
+      "sha256": "sha256:1708261a163b3a15d60e2b0d4de09f9d035aefd53c22f9a42e96b22106016233",
+      "size": 1073251,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/shinobu.png": {
+      "path": "/manus-storage/game/sha256/10dee6acf3ec11e830a67e5bd272edbe2042a066cba67989fed412262153cef0.png",
+      "sha256": "sha256:10dee6acf3ec11e830a67e5bd272edbe2042a066cba67989fed412262153cef0",
+      "size": 842811,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/tanjiro.png": {
+      "path": "/manus-storage/game/sha256/ffdaeaf740aa4678d684a3ab2e6851bd0c4b26234072a200d5a7652146a3dc90.png",
+      "sha256": "sha256:ffdaeaf740aa4678d684a3ab2e6851bd0c4b26234072a200d5a7652146a3dc90",
+      "size": 864575,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/tanjiro_full.png": {
+      "path": "/manus-storage/game/sha256/e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e.png",
+      "sha256": "sha256:e5d959d216c12acf4a866ef89c39a05c002330757cb437e3309c1efa3aed8f1e",
+      "size": 1127208,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/tengen.png": {
+      "path": "/manus-storage/game/sha256/336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941.png",
+      "sha256": "sha256:336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941",
+      "size": 918314,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/yoriichi.png": {
+      "path": "/manus-storage/game/sha256/5a4b3aa28896a715ae6678d2dfc39fb4687570e5b9f900e86fb5e19e6857a01a.png",
+      "sha256": "sha256:5a4b3aa28896a715ae6678d2dfc39fb4687570e5b9f900e86fb5e19e6857a01a",
+      "size": 1036271,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/zenitsu.png": {
+      "path": "/manus-storage/game/sha256/8bc059bbdacd89be23b56a6fc2de2fd9a7454b8c5480b7023843a656f34ef8ca.png",
+      "sha256": "sha256:8bc059bbdacd89be23b56a6fc2de2fd9a7454b8c5480b7023843a656f34ef8ca",
+      "size": 843455,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/zenitsu_full.png": {
+      "path": "/manus-storage/game/sha256/1913b9a4710a582bf50f90fb872c5b613e2b93f3bc2f53afaf0135bf0af1d4ff.png",
+      "sha256": "sha256:1913b9a4710a582bf50f90fb872c5b613e2b93f3bc2f53afaf0135bf0af1d4ff",
+      "size": 1024552,
+      "assetType": "image",
+      "groupId": "character-cards",
+      "used": false
+    },
+    "assets/interface/board.png": {
+      "path": "/manus-storage/game/sha256/db7cd0506f8787d503d257214e69a0c3a7bf91785678cc978a61a37a93a97205.png",
+      "sha256": "sha256:db7cd0506f8787d503d257214e69a0c3a7bf91785678cc978a61a37a93a97205",
+      "size": 1172427,
+      "assetType": "image",
+      "groupId": "duel-table",
+      "used": true
+    },
+    "assets/interface/card_back.png": {
+      "path": "/manus-storage/game/sha256/df4490d8f428d066bf0b6b0af556d0fa964055f79f8c5b80ebd8f06e026e3e4c.png",
+      "sha256": "sha256:df4490d8f428d066bf0b6b0af556d0fa964055f79f8c5b80ebd8f06e026e3e4c",
+      "size": 1166627,
+      "assetType": "image",
+      "groupId": "duel-table",
+      "used": true
+    },
+    "assets/share/favicon.png": {
+      "path": "/manus-storage/game/sha256/2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177.png",
+      "sha256": "sha256:2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177",
+      "size": 37081,
+      "assetType": "image",
+      "groupId": "game-identity",
+      "used": true
+    },
+    "assets/share/og.png": {
+      "path": "/manus-storage/game/sha256/429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db.png",
+      "sha256": "sha256:429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db",
+      "size": 1872392,
+      "assetType": "image",
+      "groupId": "game-identity",
+      "used": true
+    },
+    "assets/support/healing.png": {
+      "path": "/manus-storage/game/sha256/47f79226170b42abb0c2fe72ac10e395c0add24bb376c6199ea63ce69c1a22da.png",
+      "sha256": "sha256:47f79226170b42abb0c2fe72ac10e395c0add24bb376c6199ea63ce69c1a22da",
+      "size": 972383,
+      "assetType": "image",
+      "groupId": "support-cards",
+      "used": false
+    },
+    "assets/support/training.png": {
+      "path": "/manus-storage/game/sha256/661325755060bd5bc4065f1c0713541fe2a8be1f8bbfde7aa1e7ca3ff57a725a.png",
+      "sha256": "sha256:661325755060bd5bc4065f1c0713541fe2a8be1f8bbfde7aa1e7ca3ff57a725a",
+      "size": 880927,
+      "assetType": "image",
+      "groupId": "support-cards",
+      "used": false
+    },
     "assets/template/cardgame/banquet_tyrant.webp": {
       "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/03/14218001017b655a63eff0bf89b9244ac4a0e7055ed0fdfa25d527814ce2483c.webp",
       "sha256": "sha256:14218001017b655a63eff0bf89b9244ac4a0e7055ed0fdfa25d527814ce2483c",
@@ -430,7 +726,7 @@
       "size": 1850907,
       "assetType": "image",
       "groupId": "template",
-      "used": true
+      "used": false
     },
     "assets/template/cardgame/meat_mimic.webp": {
       "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/03/44465932c36b3eb438a70077a9e06d8dbacc268bf43b11248c770760e74ca261.webp",
@@ -824,6 +1120,14 @@
       "groupId": "template",
       "used": true
     },
+    "assets/template/fonts/ManusCC0-Bold.woff2": {
+      "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/30/48c1f3452238f29eb1fe4b8bddfe8fd4045045a5c26657307b8862993488148e.bin",
+      "sha256": "sha256:48c1f3452238f29eb1fe4b8bddfe8fd4045045a5c26657307b8862993488148e",
+      "size": 10308,
+      "assetType": "font",
+      "groupId": "template",
+      "used": true
+    },
     "assets/template/fonts/NotoSansSC-VF.subset.woff2": {
       "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/25/game-template/game-generic/2026.09.25-typography-v1/38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412/assets/template/fonts/NotoSansSC-VF.subset.woff2",
       "sha256": "sha256:38f4c5f927f746b3dfa4c3a5d7edf0b7a3e828e27438418fa54f9e1565289412",
@@ -855,14 +1159,6 @@
       "assetType": "image",
       "groupId": "template",
       "used": true
-    },
-    "assets/template/fonts/ManusCC0-Bold.woff2": {
-      "assetType": "font",
-      "groupId": "template",
-      "used": true,
-      "path": "https://d1oupeiobkpcny.cloudfront.net/assets/dashboard/materials/2026/09/30/48c1f3452238f29eb1fe4b8bddfe8fd4045045a5c26657307b8862993488148e.bin",
-      "sha256": "sha256:48c1f3452238f29eb1fe4b8bddfe8fd4045045a5c26657307b8862993488148e",
-      "size": 10308
     }
   }
 }

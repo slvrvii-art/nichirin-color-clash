@@ -62,187 +62,102 @@ const ART := {
     "gravy_specter": preload("res://assets/template/cardgame/gravy_specter.webp"),
 }
 
-const CARDS := {
-    "coal_squire": {
-        "name_key": "card.coal_squire.name", "type": "unit", "cost": 1, "attack": 1, "health": 2,
-        "text_key": "card.coal_squire.text", "effect": "armor_on_play", "value": 1,
-        "art": "coal_squire", "rarity": "common",
-    },
-    "pan_paladin": {
-        "name_key": "card.pan_paladin.name", "type": "unit", "cost": 2, "attack": 2, "health": 4,
-        "text_key": "card.pan_paladin.text", "guard": true,
-        "art": "pan_paladin", "rarity": "common",
-    },
-    "pepper_mage": {
-        "name_key": "card.pepper_mage.name", "type": "unit", "cost": 3, "attack": 3, "health": 2,
-        "text_key": "card.pepper_mage.text", "effect": "hero_damage_on_play", "value": 2,
-        "art": "pepper_mage", "rarity": "rare",
-    },
-    "broth_elemental": {
-        "name_key": "card.broth_elemental.name", "type": "unit", "cost": 3, "attack": 2, "health": 4,
-        "text_key": "card.broth_elemental.text", "effect": "broth_on_play",
-        "art": "broth_elemental", "rarity": "rare",
-    },
-    "truffle_knight": {
-        "name_key": "card.truffle_knight.name", "type": "unit", "cost": 5, "attack": 5, "health": 6,
-        "text_key": "card.truffle_knight.text", "guard": true,
-        "art": "truffle_knight", "rarity": "epic",
-    },
-    "precise_chop": {
-        "name_key": "card.precise_chop.name", "type": "spell", "cost": 1,
-        "text_key": "card.precise_chop.text",
-        "effect": "target_enemy_damage", "value": 2, "art": "precise_chop", "rarity": "common",
-    },
-    "searing_arc": {
-        "name_key": "card.searing_arc.name", "type": "spell", "cost": 3,
-        "text_key": "card.searing_arc.text", "effect": "enemy_area_damage", "value": 2,
-        "art": "searing_arc", "rarity": "rare",
-    },
-    "mise_en_place": {
-        "name_key": "card.mise_en_place.name", "type": "spell", "cost": 2,
-        "text_key": "card.mise_en_place.text", "effect": "draw", "value": 2,
-        "art": "mise_en_place", "rarity": "common",
-    },
-    "kitchen_guard": {
-        "name_key": "card.kitchen_guard.name", "type": "spell", "cost": 2,
-        "text_key": "card.kitchen_guard.text", "effect": "armor", "value": 5,
-        "art": "kitchen_guard", "rarity": "common",
-    },
-    "seasoned_strike": {
-        "name_key": "card.seasoned_strike.name", "type": "spell", "cost": 2,
-        "text_key": "card.seasoned_strike.text", "effect": "target_friend_buff",
-        "value": 2, "art": "seasoned_strike", "rarity": "rare",
-    },
-    "mise_the_thousand_handed": {
-        "name_key": "card.mise_the_thousand_handed.name", "type": "unit", "cost": 6,
-        "attack": 4, "health": 7, "text_key": "card.mise_the_thousand_handed.text",
-        "aura": "low_cost_engine", "art": "mise_the_thousand_handed", "rarity": "legendary",
-    },
-    "the_sovereign_cleaver": {
-        "name_key": "card.the_sovereign_cleaver.name", "type": "spell", "cost": 7,
-        "text_key": "card.the_sovereign_cleaver.text", "effect": "sovereign_cleaver",
-        "value": 5, "art": "the_sovereign_cleaver", "rarity": "legendary",
-    },
-    "bell_of_the_last_service": {
-        "name_key": "card.bell_of_the_last_service.name", "type": "spell", "cost": 8,
-        "text_key": "card.bell_of_the_last_service.text", "effect": "bell_last_service",
-        "value": 3, "heal": 8, "art": "bell_of_the_last_service", "rarity": "legendary",
-    },
-    "mooncap_broth": {
-        "name_key": "card.mooncap_broth.name", "type": "dish", "cost": 1,
-        "text_key": "card.mooncap_broth.text", "effect": "mooncap_broth",
-        "servings": 2, "art": "mooncap_broth", "rarity": "dish",
-    },
-    "braised_bulwark": {
-        "name_key": "card.braised_bulwark.name", "type": "dish", "cost": 2,
-        "text_key": "card.braised_bulwark.text",
-        "effect": "braised_bulwark", "servings": 2, "art": "braised_bulwark", "rarity": "dish",
-    },
-    "dragonpepper_roast": {
-        "name_key": "card.dragonpepper_roast.name", "type": "dish", "cost": 3,
-        "text_key": "card.dragonpepper_roast.text",
-        "effect": "dragonpepper_roast", "servings": 1, "art": "dragonpepper_roast", "rarity": "dish",
-    },
-    "leftover_stew": {
-        "name_key": "card.leftover_stew.name", "type": "dish", "cost": 1,
-        "text_key": "card.leftover_stew.text",
-        "effect": "leftover_stew", "servings": 2, "art": "leftover_stew", "rarity": "dish",
-    },
-    "pickle_imp": {
-        "name_key": "card.pickle_imp.name", "type": "unit", "cost": 1, "attack": 2, "health": 2,
-        "text_key": "card.pickle_imp.text", "ingredient": "herb", "art": "pickle_imp", "rarity": "enemy",
-    },
-    "moldling": {
-        "name_key": "card.moldling.name", "type": "unit", "cost": 2, "attack": 2, "health": 4,
-        "text_key": "card.moldling.text", "guard": true, "ingredient": "fungus",
-        "art": "moldling", "rarity": "enemy",
-    },
-    "cursed_onion": {
-        "name_key": "card.cursed_onion.name", "type": "unit", "cost": 2, "attack": 2, "health": 3,
-        "text_key": "card.cursed_onion.text", "effect": "enemy_on_play_damage",
-        "value": 1, "ingredient": "herb", "art": "cursed_onion", "rarity": "enemy",
-    },
-    "dough_golem": {
-        "name_key": "card.dough_golem.name", "type": "unit", "cost": 3, "attack": 3, "health": 5,
-        "text_key": "card.dough_golem.text", "guard": true, "ingredient": "herb",
-        "art": "dough_golem", "rarity": "enemy",
-    },
-    "meat_mimic": {
-        "name_key": "card.meat_mimic.name", "type": "unit", "cost": 4, "attack": 5, "health": 4,
-        "text_key": "card.meat_mimic.text", "ingredient": "meat", "art": "meat_mimic", "rarity": "enemy",
-    },
-    "cellar_rat": {
-        "name_key": "card.cellar_rat.name", "type": "unit", "cost": 2, "attack": 3, "health": 2,
-        "text_key": "card.cellar_rat.text", "ingredient": "herb", "art": "cellar_rat", "rarity": "enemy",
-    },
-    "gravy_specter": {
-        "name_key": "card.gravy_specter.name", "type": "unit", "cost": 3, "attack": 3, "health": 3,
-        "text_key": "card.gravy_specter.text",
-        "effect": "enemy_heal_on_play", "value": 2, "ingredient": "fungus",
-        "art": "gravy_specter", "rarity": "enemy",
-    },
-}
 
-const STARTER_DECK := [
-    "coal_squire", "coal_squire", "coal_squire", "coal_squire",
-    "pan_paladin", "pan_paladin", "pepper_mage", "broth_elemental",
-    "precise_chop", "precise_chop", "precise_chop", "searing_arc",
-    "mise_en_place", "kitchen_guard", "seasoned_strike",
+const COLORS := {"Red":"#ed6555", "Blue":"#58b9e5", "Yellow":"#f4cc68", "Green":"#83cfa2", "Purple":"#b491df", "Pink":"#eb98bd", "White":"#d9dfed"}
+const RARITIES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Legendary"]
+const FORMS := ["First Resolve", "Final Selection", "Breathing Form", "Awakened", "SURGE", "Eternal Resolve"]
+const FIGHTERS := [
+	["tanjiro","Tanjiro Kamado","Blue","Water Wheel","Hinokami Kagura"],
+	["nezuko","Nezuko Kamado","Pink","Exploding Blood","Crimson Kick"],
+	["zenitsu","Zenitsu Agatsuma","Yellow","Thunderclap & Flash","Sixfold Lightning"],
+	["inosuke","Inosuke Hashibira","Green","Pierce","Crazy Cutting"],
+	["giyu","Giyu Tomioka","Blue","Flowing Dance","Dead Calm"],
+	["rengoku","Kyojuro Rengoku","Red","Unknowing Fire","Flame Tiger"],
+	["shinobu","Shinobu Kocho","Purple","Butterfly Dance","Insect Dance"],
+	["tengen","Tengen Uzui","Yellow","Roar","String Performance"],
+	["mitsuri","Mitsuri Kanroji","Pink","Shivers of First Love","Catlove Shower"],
+	["muichiro","Muichiro Tokito","White","Sea of Clouds","Obscuring Clouds"],
+	["obanai","Obanai Iguro","Purple","Winding Serpent","Slithering Serpent"],
+	["sanemi","Sanemi Shinazugawa","Green","Dust Whirlwind Cutter","Gale Slash"],
+	["gyomei","Gyomei Himejima","White","Serpentinite Bipolar","Stone Skin"],
+	["kanao","Kanao Tsuyuri","Pink","Honorable Shadow Plum","Equinoctial Eye"],
+	["genya","Genya Shinazugawa","Purple","Nichirin Shot","Demon-Eater Strike"],
+	["akaza","Akaza","Blue","Destructive Death","Compass Needle"],
+	["doma","Doma","White","Frozen Lotus","Crystal Ice Child"],
+	["muzan","Muzan Kibutsuji","Red","Blood Whip","Black Blood Thorns"],
+	["kokushibo","Kokushibo","Purple","Dark Moon","Moonlit Catastrophe"],
+	["rui","Rui","White","Thread Cage","Cutting Thread Rotation"],
+	["daki","Daki","Pink","Obi Slash","Eight-Layered Obi"],
+	["gyutaro","Gyutaro","Green","Flying Blood Sickles","Rotating Circular Slashes"],
+	["enmu","Enmu","Purple","Dream Whisper","Endless Dream"],
+	["yoriichi","Yoriichi Tsugikuni","Red","Sun Halo Dance","Thirteenth Form"]
+]
+const ALT_ART := ["tanjiro","nezuko","zenitsu","rengoku","giyu"]
+const SUPPORTS := [
+	["Wisteria Medicine","heal",30,"healing"], ["Butterfly Mansion","heal",40,"healing"],
+	["Recovery Breathing","heal",20,"healing"], ["Tamayo's Remedy","heal",50,"healing"],
+	["Aoi's Care","heal",30,"healing"], ["Wisteria Sanctuary","heal_all",20,"healing"],
+	["Urokodaki's Lesson","draw",2,"training"], ["Kasugai Crow","draw",2,"training"],
+	["Final Selection","draw",3,"training"], ["Swordsmith's Gift","draw",1,"training"],
+	["Corps Intelligence","draw",2,"training"], ["Ubuyashiki's Guidance","draw",3,"training"],
+	["Total Concentration","boost",20,"training"], ["Hashira Training","boost",30,"training"],
+	["Nichirin Polish","boost",10,"training"], ["Unwavering Spirit","shield",20,"healing"],
+	["Haganezuka's Resolve","boost",20,"training"], ["Protect the Innocent","shield",30,"healing"]
 ]
 
-const LEGENDARY_REWARDS: Array[String] = [
-    "mise_the_thousand_handed",
-    "the_sovereign_cleaver",
-    "bell_of_the_last_service",
-]
+static func catalog() -> Array[Dictionary]:
+	var cards: Array[Dictionary] = []
+	for i in range(FIGHTERS.size()):
+		var f: Array = FIGHTERS[i]
+		for form in range(6):
+			var surge: bool = form == 4
+			var hp: int = 80 + form * 10 + (i % 3) * 10 + (30 if surge else 0)
+			var base_damage: int = 20 + form * 5 + (i % 2) * 10
+			var color: String = "Red" if i == 0 and form >= 3 else str(f[2])
+			var effect: String = ["none","heal","shield","pierce","boost","none"][form]
+			cards.append({"id":str(f[0])+"_"+str(form), "number":cards.size()+1, "name":str(f[1]),
+				"form":FORMS[form], "kind":"Fighter", "color":color, "hp":hp, "surge":surge,
+				"rarity":RARITIES[form], "art":str(f[0]), "alternate":str(f[0]) in ALT_ART,
+				"attacks":[{"name":str(f[3]),"damage":base_damage,"cost":1,"effect":"none"},
+				{"name":str(f[4]),"damage":base_damage+30+(20 if surge else 0),"cost":3 if surge else 2,"effect":effect}],
+				"text":"SURGE: awards 2 points when defeated." if surge else ["A blade drawn with courage.","Power attack restores 10 HP.","Power attack grants a 10-damage guard.","Power attack ignores guarding.","", "An unbreakable will."][form]})
+	for i in range(SUPPORTS.size()):
+		var s: Array = SUPPORTS[i]
+		var descriptions := {"heal":"Restore %d HP to your active fighter.", "heal_all":"Restore %d HP to all your fighters.", "draw":"Draw %d cards.", "boost":"Your active fighter's next attack deals +%d damage.", "shield":"Guard your active fighter against %d damage."}
+		cards.append({"id":"support_"+str(i),"number":cards.size()+1,"name":s[0],"form":"Support", "kind":"Support", "color":"White", "hp":0,"surge":false,"rarity":"Rare" if i%3==0 else "Common", "art":s[3],"alternate":false,"attacks":[],"effect":s[1],"value":s[2],"text":descriptions[s[1]] % int(s[2])})
+	return cards
 
-const RECIPES := {
-    "mooncap_broth": {
-        "name_key": "card.mooncap_broth.name", "card": "mooncap_broth",
-        "cost": {"fungus": 1, "herb": 1}, "summary_key": "recipe.mooncap_broth.summary",
-    },
-    "braised_bulwark": {
-        "name_key": "card.braised_bulwark.name", "card": "braised_bulwark",
-        "cost": {"meat": 1, "herb": 1}, "summary_key": "recipe.braised_bulwark.summary",
-    },
-    "dragonpepper_roast": {
-        "name_key": "card.dragonpepper_roast.name", "card": "dragonpepper_roast",
-        "cost": {"meat": 1, "ember": 1}, "summary_key": "recipe.dragonpepper_roast.summary",
-    },
-    "leftover_stew": {
-        "name_key": "card.leftover_stew.name", "card": "leftover_stew",
-        "cost_any": 2, "summary_key": "recipe.leftover_stew.summary",
-    },
-}
+static func starter_deck() -> Array:
+	return ["tanjiro_0","tanjiro_0","tanjiro_1","tanjiro_1","giyu_0","giyu_0","giyu_2","giyu_2","akaza_0","akaza_0","tanjiro_2","giyu_4","support_0","support_1","support_6","support_7","support_8","support_12","support_15","support_16"]
 
-const ENCOUNTERS := {
-    "picklemancer": {
-        "name_key": "encounter.picklemancer.name", "subtitle_key": "encounter.picklemancer.subtitle", "portrait": "picklemancer",
-        "health": 20, "passive_key": "encounter.picklemancer.passive",
-        "deck": ["pickle_imp", "pickle_imp", "cursed_onion", "cellar_rat", "pickle_imp", "dough_golem", "cursed_onion", "cellar_rat"],
-    },
-    "mold_monarch": {
-        "name_key": "encounter.mold_monarch.name", "subtitle_key": "encounter.mold_monarch.subtitle", "portrait": "mold_monarch",
-        "health": 25, "passive_key": "encounter.mold_monarch.passive",
-        "deck": ["moldling", "moldling", "gravy_specter", "dough_golem", "moldling", "cellar_rat", "gravy_specter", "dough_golem"],
-    },
-    "ember_butcher": {
-        "name_key": "encounter.ember_butcher.name", "subtitle_key": "encounter.ember_butcher.subtitle", "portrait": "ember_butcher",
-        "health": 24, "passive_key": "encounter.ember_butcher.passive",
-        "deck": ["cellar_rat", "meat_mimic", "pickle_imp", "meat_mimic", "cursed_onion", "dough_golem", "meat_mimic", "cellar_rat"],
-    },
-    "banquet_tyrant": {
-        "name_key": "encounter.banquet_tyrant.name", "subtitle_key": "encounter.banquet_tyrant.subtitle", "portrait": "banquet_tyrant",
-        "health": 34, "passive_key": "encounter.banquet_tyrant.passive",
-        "deck": ["pickle_imp", "moldling", "cellar_rat", "gravy_specter", "dough_golem", "meat_mimic", "cursed_onion", "meat_mimic", "gravy_specter", "dough_golem"],
-    },
-}
+static func enemy_deck() -> Array:
+	return ["rengoku_0","rengoku_0","rengoku_1","rengoku_1","muzan_0","muzan_0","muzan_2","muzan_2","yoriichi_0","yoriichi_0","rengoku_2","muzan_4","support_0","support_2","support_6","support_7","support_8","support_12","support_15","support_16"]
 
-static func card(card_id: String) -> Dictionary:
-    return CARDS.get(card_id, {}).duplicate(true)
+static func find_card(id: String) -> Dictionary:
+	for card in catalog():
+		if card.id == id:
+			return card.duplicate(true)
+	return {}
 
-static func encounter(encounter_id: String) -> Dictionary:
-    return ENCOUNTERS.get(encounter_id, {}).duplicate(true)
+static func validate_deck(ids: Array) -> String:
+	if ids.size() != 20:
+		return "Your deck needs exactly 20 cards (%d/20)." % ids.size()
+	var counts := {}
+	var fighters := 0
+	for id in ids:
+		var card := find_card(str(id))
+		if card.is_empty():
+			return "This deck contains an unknown card."
+		counts[id] = counts.get(id,0)+1
+		if counts[id] > 2:
+			return "At most two copies of each catalog card."
+		if card.kind == "Fighter":
+			fighters += 1
+	return "Include at least one Fighter." if fighters == 0 else ""
 
+static func color_for(name: String) -> Color:
+	return Color(COLORS.get(name,"#d9dfed"))
+
+# Compatibility for the retained, unexposed starter multiplayer scene.
 static func art(art_id: String) -> Texture2D:
-    return ART.get(art_id)
+	return ART.get(art_id)
