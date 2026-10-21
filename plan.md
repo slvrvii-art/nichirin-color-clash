@@ -1,27 +1,31 @@
 # Nichirin: Color Clash
 
-The approved game is an English-only, offline 2D Demon Slayer-themed trading card battler in the initialized Godot trading-card project. Keep source ownership in card_game.gd (simulation, presentation, input, persistence), card_database.gd (catalog), battle_layout.gd (board geometry), and boot.gd (startup). Preserve bundled fonts, source licenses, runtime adapters and managed export pipeline. Replace the starter's unrelated kitchen combat with active-card and three-bench-slot rules.
+The approved game is an English-only, offline 2D Demon Slayer-themed trading card battler in the initialized Godot trading-card project. Keep source ownership in `scripts/card_game.gd` (simulation, presentation, input and persistence), `scripts/card_database.gd` (catalog), `scripts/battle_layout.gd` (board geometry), and `scripts/boot.gd` (startup). Preserve bundled fonts, licenses, runtime adapters and managed export pipeline.
 
 ## Implementation
 
-Build a 162-card catalog: 24 characters across six mechanically distinct forms (144 fighter cards), plus 18 Support cards. Include Common, Uncommon, Rare, Epic and Legendary rarities, SURGE variants, basic-art and full-art treatments, and independently illustrated alternate full art for major characters. Red, Blue, Yellow, Green, Purple, Pink and White are Color Types; a matching Color Energy is generated once each player turn and may be attached once. Twenty cards exactly are required to enter battle; never permit adding card 21. Limit two copies of a catalog card. Save deck, artwork preference, collection discoveries and match record locally with the template's atomic JSON helper.
+Keep the 150-card minimum while removing the six-form rarity ladder from fighter cards: the 24 character fighters each have exactly one Normal and one SURGE version, for 48 fighters. There are no extra rarity-print fighter duplicates. The remaining 102 catalog entries are utility cards divided between Support and Item, including the current support pool. Supports are limited to one per player's turn; any number of Items may be used that turn. Keep the strict 20-card deck, two-copy-per-catalog-card limit, color filters, selectable basic/full-art artwork and major alternate illustrations.
 
-The battle has one active fighter and three bench slots per side. Draw a five-card opening hand containing a fighter, place the opening fighter automatically, then draw once each turn. Play fighter cards to the bench, use at most one Support per turn, attach Color Energy to active or bench, and retreat once for one attached energy. Costs require matching color plus flexible energy. Active attacks resolve damage, knockouts and points, then end the turn automatically. Three knockout points win; SURGE knockouts grant two. An empty enemy board also wins. AI uses the same core legality functions. Offer explicit End Turn, rules/pause, victory/defeat and replay.
+Retain Red, Blue, Yellow, Green, Purple, Pink and White Color Types, one generated Color Energy and one manual attachment per turn, one active fighter and exactly three bench spaces per side. Items, Supports, abilities and moves resolve through authoritative legality, effect and targeting helpers shared by player and AI. SURGE knockouts award two points; the first side to three points wins.
+
+Apply Sleep, Poison, Burn and Paralysis only as defined effects on moves/abilities. Sleep blocks active attacks and retreat until a heads result on its controller's turn-start coin check clears it; tails leaves it. Poison deals 10 damage when its controller begins a turn and persists while active. Burn deals 20 at turn start, then its controller flips a coin; heads clears Burn, tails leaves it. Poison, Burn and Paralysis clear when that affected fighter retreats or a status-curing Item/Support resolves. Paralysis requires a pre-attack coin flip; heads permits damage and attack effects, while tails does zero damage and causes no attack effect. Statuses are visible, are conveyed in the How to Play rules and cannot linger on a discarded knockout.
+
+Install the user's supplied slash GIF as the attack-animation source, preserve the original asset, render its keyed transparent frame sequence once per attack, and keep damage and turn-change feedback distinct. Respect reduced-motion settings. Keep AI actions valid for Item/Support limits, statuses, cards, Energy and attacks.
+
+Save deck/presentation preferences and match records locally through the atomic JSON helper; migrate old fighter IDs to the corresponding Normal/SURGE cards while keeping a legal deck after migration.
 
 ## Project structure
 
-- scripts/card_game.gd: menu, battle, collection, deck builder, card preview, AI, persistence and user actions.
-- scripts/card_database.gd: all 162 card definitions and art references.
-- scripts/battle_layout.gd: 1440×900 safe fixed board geometry.
-- scripts/card_face.gd: reusable live-text card component, basic/full art and rarity treatments.
-- assets/fighters, assets/support, assets/interface, assets/share: game-specific generated artwork.
-- web loading source and scenes/boot.tscn: original loader with real progress and retry.
-- test/nichirin_rules_test.gd and native capture: bounded rules checks and rendered evidence.
+- `scripts/card_game.gd`: hub, collection, deck builder, battle state, AI, card plays, turns, statuses, targeting, animations, persistence and UI.
+- `scripts/card_database.gd`: 24 characters/48 fighter editions, 102 Support/Item effects, starter decks and compatibility mapping.
+- `scripts/battle_layout.gd`: board geometry and safe-canvas placement.
+- `scripts/card_face.gd`: Fighter/Support/Item face presentation, Normal/SURGE markers and selectable artwork.
+- `assets/interface/attack_slash_frames.tres` plus supplied GIF-derived frames: one-shot attack animation; untouched source under `source-art/`.
+- `test/` and `scripts/smoke_test.gd`: bounded deck, card-type, status, attack, AI and rendered behavior checks.
+- `assets/fighters`, `assets/support`, `assets/interface`, `assets/share`, `web/` and `scenes/`: themed art, identity, loader and project scenes.
 
 ## Design
 
-Three considered styles: Taisho-era collector's cabinet (0.07), neon tournament broadcast (0.04), sumi-e paper tabletop (0.06). Selected: Taisho-era collector's cabinet.
+Selected style: Taisho-era collector's cabinet, with midnight navy, warm ivory live text, muted gold borders and vermilion actions. Keep the battle board quiet, off-center and spacious with a left navigation rail and right contextual panel. Retain the sunrise sword crest, geometric card borders and bundled body/display fonts.
 
-A midnight navy collectible-card interface with warm ivory live text, muted gold hairline borders and vermilion actions. Broad illustrated cards carry the color accents; the board stays quiet and spacious. A thin left navigation rail and horizontal page headings create an off-center workspace, with a right-side contextual deck/attack panel. Signature motifs are a sunrise sword crest, fine geometric card borders and small monospaced catalog numbering. Use the bundled display/body font resources. The wordmark stacks NICHIRIN with a widely spaced COLOR CLASH subtitle, paired with a game-specific sword crest crop. Personality: precise, cinematic, collectible. Brand voice: 'Draw your blade.' and 'One strike. A new turn.'
-
-Attacks lunge the active card and send a sweeping slash toward the opposing active card. Damage shakes and briefly reddens the target while a damage number rises. Turn changes sweep a gold/red banner across the board. Collection cards lift on hover; full-art SURGE cards shimmer with a gold border. A reduced-motion option keeps cues readable with short fades rather than travel.
+Use the supplied slash GIF as the attack strike, smoothly keyed so its dark background is transparent over the board. The defender separately shakes and reddens, with floating damage numbers. Show compact legible status pills and turn-start coin outcomes. Turn changes retain their red/gold banner. Reduced-motion mode keeps the GIF cue brief and damage/status states visible.

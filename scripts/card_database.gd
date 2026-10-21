@@ -20,18 +20,18 @@ const ART := {
     "juice_encounter_seal": preload("res://assets/template/cardgame/juice/encounter_seal.png"),
     "juice_selection_knife": preload("res://assets/template/cardgame/juice/selection_knife.png"),
     "juice_cooking_cauldron": preload("res://assets/template/cardgame/juice/cooking_cauldron.png"),
-	"tutorial_mise": preload("res://assets/template/cardgame/tutorial/mise_guide.png"),
-	"tutorial_pointer": preload("res://assets/template/cardgame/tutorial/spoon_pointer.png"),
-	"hud_hero_station_frame": preload("res://assets/template/cardgame/layout/hero_station_frame.png"),
-	"hud_unit_plate_frame": preload("res://assets/template/cardgame/layout/unit_plate_frame.png"),
-	"hud_passive_medallion_frame": preload("res://assets/template/cardgame/layout/passive_medallion_frame.png"),
-	"hud_turn_marker": preload("res://assets/template/cardgame/layout/turn_marker.png"),
-	"hud_end_turn_frame": preload("res://assets/template/cardgame/layout/end_turn_frame.png"),
-	"hud_history_ticket_frame": preload("res://assets/template/cardgame/layout/history_ticket_frame.png"),
-	"hud_pantry_tray_frame": preload("res://assets/template/cardgame/layout/pantry_tray_frame.png"),
-	"hud_mana_rack_frame": preload("res://assets/template/cardgame/layout/mana_rack_frame.png"),
-	"hud_deck_cradle": preload("res://assets/template/cardgame/layout/deck_cradle.png"),
-	"picklemancer": preload("res://assets/template/cardgame/picklemancer.webp"),
+    "tutorial_mise": preload("res://assets/template/cardgame/tutorial/mise_guide.png"),
+    "tutorial_pointer": preload("res://assets/template/cardgame/tutorial/spoon_pointer.png"),
+    "hud_hero_station_frame": preload("res://assets/template/cardgame/layout/hero_station_frame.png"),
+    "hud_unit_plate_frame": preload("res://assets/template/cardgame/layout/unit_plate_frame.png"),
+    "hud_passive_medallion_frame": preload("res://assets/template/cardgame/layout/passive_medallion_frame.png"),
+    "hud_turn_marker": preload("res://assets/template/cardgame/layout/turn_marker.png"),
+    "hud_end_turn_frame": preload("res://assets/template/cardgame/layout/end_turn_frame.png"),
+    "hud_history_ticket_frame": preload("res://assets/template/cardgame/layout/history_ticket_frame.png"),
+    "hud_pantry_tray_frame": preload("res://assets/template/cardgame/layout/pantry_tray_frame.png"),
+    "hud_mana_rack_frame": preload("res://assets/template/cardgame/layout/mana_rack_frame.png"),
+    "hud_deck_cradle": preload("res://assets/template/cardgame/layout/deck_cradle.png"),
+    "picklemancer": preload("res://assets/template/cardgame/picklemancer.webp"),
     "mold_monarch": preload("res://assets/template/cardgame/mold_monarch.webp"),
     "ember_butcher": preload("res://assets/template/cardgame/ember_butcher.webp"),
     "banquet_tyrant": preload("res://assets/template/cardgame/banquet_tyrant.webp"),
@@ -62,10 +62,9 @@ const ART := {
     "gravy_specter": preload("res://assets/template/cardgame/gravy_specter.webp"),
 }
 
-
 const COLORS := {"Red":"#ed6555", "Blue":"#58b9e5", "Yellow":"#f4cc68", "Green":"#83cfa2", "Purple":"#b491df", "Pink":"#eb98bd", "White":"#d9dfed"}
-const RARITIES := ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Legendary"]
-const FORMS := ["First Resolve", "Final Selection", "Breathing Form", "Awakened", "SURGE", "Eternal Resolve"]
+const RARITIES := ["Normal", "SURGE", "Common", "Uncommon", "Rare", "Epic", "Legendary"]
+const VERSIONS := ["Normal", "SURGE"]
 const FIGHTERS := [
 	["tanjiro","Tanjiro Kamado","Blue","Water Wheel","Hinokami Kagura"],
 	["nezuko","Nezuko Kamado","Pink","Exploding Blood","Crimson Kick"],
@@ -93,55 +92,120 @@ const FIGHTERS := [
 	["yoriichi","Yoriichi Tsugikuni","Red","Sun Halo Dance","Thirteenth Form"]
 ]
 const ALT_ART := ["tanjiro","nezuko","zenitsu","rengoku","giyu"]
+const MOVE_STATUSES := {
+	"nezuko":["","Burn"], "zenitsu":["Paralysis","Paralysis"],
+	"rengoku":["","Burn"], "shinobu":["Poison","Poison"],
+	"akaza":["","Paralysis"], "doma":["Sleep","Sleep"],
+	"muzan":["","Poison"], "rui":["","Paralysis"],
+	"gyutaro":["","Poison"], "enmu":["Sleep","Sleep"]
+}
+
+# The first 18 utility cards retain their saved card IDs; several medicines are now Items.
 const SUPPORTS := [
-	["Wisteria Medicine","heal",30,"healing"], ["Butterfly Mansion","heal",40,"healing"],
-	["Recovery Breathing","heal",20,"healing"], ["Tamayo's Remedy","heal",50,"healing"],
-	["Aoi's Care","heal",30,"healing"], ["Wisteria Sanctuary","heal_all",20,"healing"],
-	["Urokodaki's Lesson","draw",2,"training"], ["Kasugai Crow","draw",2,"training"],
-	["Final Selection","draw",3,"training"], ["Swordsmith's Gift","draw",1,"training"],
-	["Corps Intelligence","draw",2,"training"], ["Ubuyashiki's Guidance","draw",3,"training"],
-	["Total Concentration","boost",20,"training"], ["Hashira Training","boost",30,"training"],
-	["Nichirin Polish","boost",10,"training"], ["Unwavering Spirit","shield",20,"healing"],
-	["Haganezuka's Resolve","boost",20,"training"], ["Protect the Innocent","shield",30,"healing"]
+	["Wisteria Medicine","cleanse_heal",30,"healing","Item"],
+	["Butterfly Mansion","team_heal_cleanse",20,"healing","Support"],
+	["Recovery Breathing","heal",20,"healing","Item"],
+	["Tamayo's Remedy","cleanse_heal",50,"healing","Item"],
+	["Aoi's Care","cleanse_heal",30,"healing","Item"],
+	["Wisteria Sanctuary","team_heal_cleanse",20,"healing","Support"],
+	["Urokodaki's Lesson","draw",2,"training","Support"],
+	["Kasugai Crow","draw",2,"training","Support"],
+	["Final Selection","draw",3,"training","Support"],
+	["Swordsmith's Gift","draw",1,"training","Item"],
+	["Corps Intelligence","draw",2,"training","Support"],
+	["Ubuyashiki's Guidance","draw",3,"training","Support"],
+	["Total Concentration","boost",20,"training","Support"],
+	["Hashira Training","boost",30,"training","Support"],
+	["Nichirin Polish","boost",10,"training","Item"],
+	["Unwavering Spirit","shield",20,"healing","Item"],
+	["Haganezuka's Resolve","boost",20,"training","Support"],
+	["Protect the Innocent","shield",30,"healing","Support"]
 ]
+
+const SUPPORT_EXTRA_SUBJECTS := ["Hashira Council","Corps Dispatch","Ubuyashiki's Order","Wisteria Escort","Swordsmith Meeting","Final Selection Brief","Kakushi Team","Butterfly Mansion Clinic","Crow Messenger","Demon Slayer Corps","Mountain Training","Night Watch","Rengoku's Resolve","Water Hashira's Counsel"]
+const SUPPORT_EXTRA_SUFFIXES := ["Plan","Briefing","Formation"]
+const ITEM_EXTRA_SUBJECTS := ["Wisteria Salve","Nichirin Oil","Butterfly Poultice","Crow's Ration","Swordsmith Kit","Breathing Draught","Ubuyashiki Seal","Sunlight Charm","Mountain Bandage","Demon-Slaying Tonic","Calming Incense","Wisteria Powder","Hashira Field Kit","Haganezuka Stone"]
+const ITEM_EXTRA_SUFFIXES := ["Kit","Supply","Cache"]
+const SUPPORT_EXTRA_EFFECTS := ["draw","boost","shield","heal","team_heal_cleanse","remove_status"]
+const ITEM_EXTRA_EFFECTS := ["heal","cleanse_heal","draw","boost","shield","remove_status","heal_all"]
+const EXTRA_VALUES := [10,20,30,40,50]
 
 static func catalog() -> Array[Dictionary]:
 	var cards: Array[Dictionary] = []
 	for i in range(FIGHTERS.size()):
 		var f: Array = FIGHTERS[i]
-		for form in range(6):
-			var surge: bool = form == 4
-			var hp: int = 80 + form * 10 + (i % 3) * 10 + (30 if surge else 0)
-			var base_damage: int = 20 + form * 5 + (i % 2) * 10
-			var color: String = "Red" if i == 0 and form >= 3 else str(f[2])
-			var effect: String = ["none","heal","shield","pierce","boost","none"][form]
-			var ability_id: String = "blood_dominion" if str(f[0])=="muzan" else ""
-			var ability_name: String = "Blood Dominion" if ability_id!="" else ""
-			var ability_text: String = "Once per turn, choose a benched fighter. Generate one Color Energy of your current Energy color on it." if ability_id!="" else ""
-			cards.append({"id":str(f[0])+"_"+str(form), "number":cards.size()+1, "name":str(f[1]),
-				"form":FORMS[form], "kind":"Fighter", "color":color, "hp":hp, "surge":surge,
-				"rarity":RARITIES[form], "art":str(f[0]), "alternate":str(f[0]) in ALT_ART,
-				"ability_id":ability_id, "ability_name":ability_name, "ability_text":ability_text,
-				"attacks":[{"name":str(f[3]),"damage":base_damage,"cost":1,"effect":"none"},
-				{"name":str(f[4]),"damage":base_damage+30+(20 if surge else 0),"cost":3 if surge else 2,"effect":effect}],
-				"text":"SURGE: awards 2 points when defeated." if surge else ["A blade drawn with courage.","Power attack restores 10 HP.","Power attack grants a 10-damage guard.","Power attack ignores guarding.","", "An unbreakable will."][form]})
+		for surge in [false,true]:
+			var version: String = "SURGE" if surge else "Normal"
+			var hp: int = 90 + (i % 3) * 10 + (35 if surge else 0)
+			var base_damage: int = 25 + (i % 2) * 10 + (10 if surge else 0)
+			var ability_id: String = "blood_dominion" if str(f[0]) == "muzan" else ""
+			var ability_name: String = "Blood Dominion" if ability_id != "" else ""
+			var ability_text: String = "Once per turn, choose a benched fighter. Generate one Color Energy of your current Energy color on it." if ability_id != "" else ""
+			var move_statuses: Array = MOVE_STATUSES.get(str(f[0]),["",""])
+			var secondary_effect: String = ["heal","shield","pierce","boost","none"][i % 5]
+			var first_attack := {"name":str(f[3]),"damage":base_damage,"cost":1,"effect":"none","status":str(move_statuses[0])}
+			var second_attack := {"name":str(f[4]),"damage":base_damage+40+(20 if surge else 0),"cost":3 if surge else 2,"effect":secondary_effect,"status":str(move_statuses[1])}
+			cards.append({"id":str(f[0])+ ("_surge" if surge else "_normal"), "number":cards.size()+1,
+				"name":str(f[1]),"form":version,"kind":"Fighter","color":str(f[2]),"hp":hp,"surge":surge,
+				"rarity":version,"art":str(f[0]),"alternate":str(f[0]) in ALT_ART,
+				"ability_id":ability_id,"ability_name":ability_name,"ability_text":ability_text,
+				"attacks":[first_attack,second_attack],
+				"text":"SURGE: awards 2 points when defeated." if surge else "Normal fighter edition."})
 	for i in range(SUPPORTS.size()):
 		var s: Array = SUPPORTS[i]
-		var descriptions := {"heal":"Restore %d HP to your active fighter.", "heal_all":"Restore %d HP to all your fighters.", "draw":"Draw %d cards.", "boost":"Your active fighter's next attack deals +%d damage.", "shield":"Guard your active fighter against %d damage."}
-		cards.append({"id":"support_"+str(i),"number":cards.size()+1,"name":s[0],"form":"Support", "kind":"Support", "color":"White", "hp":0,"surge":false,"rarity":"Rare" if i%3==0 else "Common", "art":s[3],"alternate":false,"attacks":[],"effect":s[1],"value":s[2],"text":descriptions[s[1]] % int(s[2])})
+		_append_utility(cards,"support_"+str(i),str(s[0]),str(s[1]),int(s[2]),str(s[3]),str(s[4]),i)
+	for i in range(42):
+		var suffix_index: int = int(i / SUPPORT_EXTRA_SUBJECTS.size())
+		var name: String = str(SUPPORT_EXTRA_SUBJECTS[i % SUPPORT_EXTRA_SUBJECTS.size()])+" "+str(SUPPORT_EXTRA_SUFFIXES[suffix_index])
+		var effect: String = str(SUPPORT_EXTRA_EFFECTS[i % SUPPORT_EXTRA_EFFECTS.size()])
+		var value: int = int(EXTRA_VALUES[i % EXTRA_VALUES.size()])
+		_append_utility(cards,"support_extra_%02d" % i,name,effect,value,"healing" if effect in ["heal","shield","team_heal_cleanse","remove_status"] else "training","Support",i+18)
+	for i in range(42):
+		var suffix_index: int = int(i / ITEM_EXTRA_SUBJECTS.size())
+		var name: String = str(ITEM_EXTRA_SUBJECTS[i % ITEM_EXTRA_SUBJECTS.size()])+" "+str(ITEM_EXTRA_SUFFIXES[suffix_index])
+		var effect: String = str(ITEM_EXTRA_EFFECTS[i % ITEM_EXTRA_EFFECTS.size()])
+		var value: int = int(EXTRA_VALUES[(i+2) % EXTRA_VALUES.size()])
+		_append_utility(cards,"item_%02d" % i,name,effect,value,"healing" if effect in ["heal","cleanse_heal","heal_all","remove_status"] else "training","Item",i+36)
 	return cards
 
+static func _append_utility(cards: Array[Dictionary], id: String, name: String, effect: String, value: int, art: String, kind: String, ordinal: int) -> void:
+	var descriptions := {
+		"heal":"Restore %d HP to your active fighter.",
+		"heal_all":"Restore %d HP to all your fighters.",
+		"cleanse_heal":"Restore %d HP to your active fighter and clear its status conditions.",
+		"team_heal_cleanse":"Restore %d HP to each fighter and clear their status conditions.",
+		"remove_status":"Clear all status conditions from your active fighter.",
+		"draw":"Draw %d cards.",
+		"boost":"Your active fighter's next attack deals +%d damage.",
+		"shield":"Guard your active fighter against %d damage."
+	}
+	var text: String = descriptions.get(effect,"Restore %d HP to your active fighter.")
+	if effect == "remove_status": text = "Clear all status conditions from your active fighter."
+	else: text = text % value
+	cards.append({"id":id,"number":cards.size()+1,"name":name,"form":kind,"kind":kind,"color":"White","hp":0,
+		"surge":false,"rarity":"Rare" if ordinal % 5 == 0 else ("Uncommon" if ordinal % 3 == 0 else "Common"),
+		"art":art,"alternate":false,"attacks":[],"effect":effect,"value":value,"text":text})
+
 static func starter_deck() -> Array:
-	return ["tanjiro_0","tanjiro_0","tanjiro_1","tanjiro_1","giyu_0","giyu_0","giyu_2","giyu_2","akaza_0","akaza_0","tanjiro_2","giyu_4","support_0","support_1","support_6","support_7","support_8","support_12","support_15","support_16"]
+	return ["tanjiro_normal","tanjiro_normal","tanjiro_surge","tanjiro_surge","giyu_normal","giyu_normal","giyu_surge","giyu_surge","akaza_normal","akaza_normal","akaza_surge","akaza_surge","support_0","support_0","support_9","support_9","support_1","support_6","support_10","support_12"]
 
 static func enemy_deck() -> Array:
-	return ["rengoku_0","rengoku_0","rengoku_1","rengoku_1","muzan_0","muzan_0","muzan_2","muzan_2","yoriichi_0","yoriichi_0","rengoku_2","muzan_4","support_0","support_2","support_6","support_7","support_8","support_12","support_15","support_16"]
+	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","muzan_normal","muzan_normal","muzan_surge","muzan_surge","yoriichi_normal","yoriichi_normal","yoriichi_surge","yoriichi_surge","support_0","support_0","support_2","support_2","support_6","support_7","support_12","support_17"]
 
 static func find_card(id: String) -> Dictionary:
 	for card in catalog():
 		if card.id == id:
 			return card.duplicate(true)
 	return {}
+
+static func migrate_card_id(old_id: String) -> String:
+	if not find_card(old_id).is_empty(): return old_id
+	var split: PackedStringArray = old_id.rsplit("_",true,1)
+	if split.size() == 2 and split[1].is_valid_int():
+		for fighter in FIGHTERS:
+			if str(fighter[0]) == split[0]:
+				return str(fighter[0])+("_surge" if int(split[1]) == 4 else "_normal")
+	return old_id
 
 static func validate_deck(ids: Array) -> String:
 	if ids.size() != 20:

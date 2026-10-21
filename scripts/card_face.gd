@@ -33,7 +33,7 @@ func setup(card: Dictionary, artwork: bool, dimensions: Vector2, small: bool = f
 	var w := dimensions.x
 	var h := dimensions.y
 	var s := w/200.0
-	var art_path: String = "res://assets/support/"+str(data.art)+".png" if data.kind == "Support" else "res://assets/fighters/"+str(data.art)+( "_full" if full_art and bool(data.get("alternate",false)) else "")+".png"
+	var art_path: String = "res://assets/support/"+str(data.art)+".png" if data.kind in ["Support","Item"] else "res://assets/fighters/"+str(data.art)+( "_full" if full_art and bool(data.get("alternate",false)) else "")+".png"
 	var image := TextureRect.new()
 	image.texture = texture(art_path)
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -51,7 +51,7 @@ func setup(card: Dictionary, artwork: bool, dimensions: Vector2, small: bool = f
 	var short_name: String = str(data.name).split(" ")[0]
 	if short_name == "Kyojuro": short_name = "Rengoku"
 	label_at(short_name+(" SURGE" if data.surge else ""),Vector2(10,7)*s,Vector2(155,22)*s,17*s,Color("#f5ead6"),DISPLAY)
-	label_at(str(data.get("hp",0))+" HP" if data.kind != "Support" else "SUPPORT",Vector2(10,29)*s,Vector2(176,16)*s,10*s,border)
+	label_at(str(data.get("hp",0))+" HP" if data.kind == "Fighter" else str(data.kind).to_upper(),Vector2(10,29)*s,Vector2(176,16)*s,10*s,border)
 	var bottom := ColorRect.new()
 	bottom.color = Color(0.025,0.045,0.075,0.9 if full_art else 1.0)
 	bottom.position = Vector2(4,h*0.65)
@@ -65,11 +65,13 @@ func setup(card: Dictionary, artwork: bool, dimensions: Vector2, small: bool = f
 		var attacks: Array = data.attacks
 		for i in range(attacks.size()):
 			var a: Dictionary = attacks[i]
-			label_at(str(a.name),Vector2(10,h*0.73+i*22*s),Vector2(w-46,19*s),10.5*s,Color("#f7eedf"))
+			var attack_label: String = str(a.name)
+			if str(a.get("status",""))!="" and w>=150: attack_label += " · "+str(a.status).to_upper()
+			label_at(attack_label,Vector2(10,h*0.73+i*22*s),Vector2(w-46,19*s),9.5*s,Color("#f7eedf"))
 			label_at(str(a.damage),Vector2(w-38,h*0.73+i*22*s),Vector2(30,19)*s,12*s,Color("#e7c57c"))
 	else:
 		label_at(str(data.text),Vector2(10,h*0.73),Vector2(w-20,h*0.17),10*s,Color("#e7decf"),BODY,true)
-	label_at("%03d  /  162" % int(data.number),Vector2(10,h-19*s),Vector2(w*0.52,16*s),8.5*s,Color("#93a1b6"))
+	label_at("%03d  /  150" % int(data.number),Vector2(10,h-19*s),Vector2(w*0.52,16*s),8.5*s,Color("#93a1b6"))
 	label_at(str(data.rarity).to_upper(),Vector2(w*0.52,h-19*s),Vector2(w*0.46,16*s),8.5*s,Color("#d5ba81"))
 
 static func texture(path: String) -> Texture2D:

@@ -3,7 +3,7 @@
   "engineVersion": "4.7.2.stable.official.ed1daf0bf",
   "inputs": {
     "objectFormat": "sha1",
-    "tree": "11c905a063f3098f73bedc99f9404fb16fa59737",
+    "tree": "a9af777eef70af46c18653721efa036317c9466d",
     "entries": [
       {
         "path": ".gitignore",
@@ -39,7 +39,7 @@
         "path": "TODO.md",
         "type": "file",
         "mode": "100644",
-        "object": "e09cbee7a3d13a18c8264329894e9e1ead6136ea"
+        "object": "9f6783956159d842dc6a3c188e91b9d38413b196"
       },
       {
         "path": "app.config.ts",
@@ -51,7 +51,7 @@
         "path": "assets.lock.json",
         "type": "file",
         "mode": "100644",
-        "object": "3d051225acb8f5b4ed61def7d24b548300cb9c5a"
+        "object": "017025c30dcbfa9bcd2c9aee562d6c92367bc251"
       },
       {
         "path": "assets/fighters/akaza.png",
@@ -371,6 +371,216 @@
         "type": "file",
         "mode": "100644",
         "object": "c8e365044128f2fa48ecc88d40c61bef521353fd"
+      },
+      {
+        "path": "assets/interface/attack_slash.animation.json",
+        "type": "file",
+        "mode": "100644",
+        "object": "8a38a1335cedf54b69e699b15c1499cfe5c55e14"
+      },
+      {
+        "path": "assets/interface/attack_slash_01.webp",
+        "type": "managed",
+        "sha256": "sha256:4ae461943e2e8c6366b980f3b8df1a0be221ef9f4b9c06bd8ab76a7ddc495dad"
+      },
+      {
+        "path": "assets/interface/attack_slash_01.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "133d5e3f13bd009a194cc82f6f3715478ef8bac1"
+      },
+      {
+        "path": "assets/interface/attack_slash_02.webp",
+        "type": "managed",
+        "sha256": "sha256:941bae63704c196384d016621e22b552bb8d463104a1faa5eb2a96d8ee50c048"
+      },
+      {
+        "path": "assets/interface/attack_slash_02.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "d503b8c5f51bec334cd5ed8aab98506d8ddd55bf"
+      },
+      {
+        "path": "assets/interface/attack_slash_03.webp",
+        "type": "managed",
+        "sha256": "sha256:2b07000bc7187622663280684b5f97e63e00455604f50106aa71ce01e725f902"
+      },
+      {
+        "path": "assets/interface/attack_slash_03.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "60bc8ea159112ed1878ff30ccdb21e26ab8a83b5"
+      },
+      {
+        "path": "assets/interface/attack_slash_04.webp",
+        "type": "managed",
+        "sha256": "sha256:4d15377b2b8cdfd5bd21b7122b6e632e8d82e469ede159a5e476e03be692baa9"
+      },
+      {
+        "path": "assets/interface/attack_slash_04.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "a10aa4b5c5c191f118cd3e35093a9c79675638e0"
+      },
+      {
+        "path": "assets/interface/attack_slash_05.webp",
+        "type": "managed",
+        "sha256": "sha256:3fbad4cbb8bad447d9fcad2a3be350de1ac95e87d685f0de7ceb3dd5d72cbff1"
+      },
+      {
+        "path": "assets/interface/attack_slash_05.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "c968d0897fcac4e827d04acf7b676a507a68626d"
+      },
+      {
+        "path": "assets/interface/attack_slash_06.webp",
+        "type": "managed",
+        "sha256": "sha256:db1820167ebe199b446b4b374e8e5b2c6d96b6a46aa85e55f3d20e9125c8e5b7"
+      },
+      {
+        "path": "assets/interface/attack_slash_06.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "a6164c9fb7874f41a27fc062b16a73f3ef127f2f"
+      },
+      {
+        "path": "assets/interface/attack_slash_07.webp",
+        "type": "managed",
+        "sha256": "sha256:7f17fd346ce95d8e11bd3aff9080af78ea13518099fe701dda807e089154efd7"
+      },
+      {
+        "path": "assets/interface/attack_slash_07.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "54fef2b056f466247e066f4c237f9110096d5830"
+      },
+      {
+        "path": "assets/interface/attack_slash_08.webp",
+        "type": "managed",
+        "sha256": "sha256:233d728ea263f812426d09c5b5fb38521f044dc543d1009ccbad179c68876da0"
+      },
+      {
+        "path": "assets/interface/attack_slash_08.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "bd7e0a38da8b303dd1fdc5881ae4be7301527644"
+      },
+      {
+        "path": "assets/interface/attack_slash_09.webp",
+        "type": "managed",
+        "sha256": "sha256:191fff3db0797675c12d645b0bba98560503b8f0d2d399dd5d5f6c6f65c3d8cb"
+      },
+      {
+        "path": "assets/interface/attack_slash_09.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "9ea7b412c60954019ab1e1a79ce840c956583ece"
+      },
+      {
+        "path": "assets/interface/attack_slash_10.webp",
+        "type": "managed",
+        "sha256": "sha256:2d6ac1851e84895c490a9fc6116b449dd7ac10f7d53a912f4e6864cdb68895c5"
+      },
+      {
+        "path": "assets/interface/attack_slash_10.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "ac7a6c0e1906bfbfe866c5813db8135b62524ea9"
+      },
+      {
+        "path": "assets/interface/attack_slash_11.webp",
+        "type": "managed",
+        "sha256": "sha256:f2dbb64d1fb7e1662b48d1181e2c907169495a0227ec13a0f492804f809780e2"
+      },
+      {
+        "path": "assets/interface/attack_slash_11.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "dd7cae299870458377e9aa9ec27ec88f9b70ecad"
+      },
+      {
+        "path": "assets/interface/attack_slash_12.webp",
+        "type": "managed",
+        "sha256": "sha256:4208fffa7fec8ca4abcd6a056893f23cc73a807b3963169a67be64e7414a0b0b"
+      },
+      {
+        "path": "assets/interface/attack_slash_12.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "e70bc18646f224bf42595a7a85dd396a880d8e24"
+      },
+      {
+        "path": "assets/interface/attack_slash_13.webp",
+        "type": "managed",
+        "sha256": "sha256:daf322052dfc22c66acc05207be939fb661649e255273edfbf7218ffddbab407"
+      },
+      {
+        "path": "assets/interface/attack_slash_13.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "5faa6c4701a3b66e715b95753dbd49c070f4007d"
+      },
+      {
+        "path": "assets/interface/attack_slash_14.webp",
+        "type": "managed",
+        "sha256": "sha256:9a2b5400ecfe4c0eecabe75a6b00c966aa247fd0b2b8a94315348d35d931fa39"
+      },
+      {
+        "path": "assets/interface/attack_slash_14.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "4a46cadce0c91b1bb4214c5b1466c6c0abc0c8b6"
+      },
+      {
+        "path": "assets/interface/attack_slash_15.webp",
+        "type": "managed",
+        "sha256": "sha256:f2b2a6078eae186f84ff1a001d4b55ca0dd4dee5f0fae4ec8c0e0d99ee2ba62a"
+      },
+      {
+        "path": "assets/interface/attack_slash_15.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "30948519f362224abd9e30e928788f3db981fcee"
+      },
+      {
+        "path": "assets/interface/attack_slash_16.webp",
+        "type": "managed",
+        "sha256": "sha256:431a1aded1193c1903d7ee0536b2a094f3ccc9c4b1b15b0cdd9d552a11bdcb54"
+      },
+      {
+        "path": "assets/interface/attack_slash_16.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "7cb4c22705fea0c89700eafb72f91a91f8a5d82d"
+      },
+      {
+        "path": "assets/interface/attack_slash_17.webp",
+        "type": "managed",
+        "sha256": "sha256:02e10ff785d5143d5a2bc84f88fa6066666131ac2f42739f8607a2d0bf83d87b"
+      },
+      {
+        "path": "assets/interface/attack_slash_17.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "53dcd7fb87da52655d5d6768b08e559d7793117b"
+      },
+      {
+        "path": "assets/interface/attack_slash_18.webp",
+        "type": "managed",
+        "sha256": "sha256:810bda1343742461bb3fccf7de40b53b0651966574d375f24c5b475aa92132f5"
+      },
+      {
+        "path": "assets/interface/attack_slash_18.webp.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "4314343eca9239ff8136b253d0daff236fa5c9b1"
+      },
+      {
+        "path": "assets/interface/attack_slash_frames.tres",
+        "type": "file",
+        "mode": "100644",
+        "object": "a053852e758f23bf2bb47bab1072dffc93cf7a66"
       },
       {
         "path": "assets/interface/board.png",
@@ -1865,7 +2075,7 @@
         "path": "plan.md",
         "type": "file",
         "mode": "100644",
-        "object": "980a6cf2f429bbc41e94edf1465cf942908a8461"
+        "object": "1eef5b012bd274299eb12c904442e78c4f673869"
       },
       {
         "path": "project.godot",
@@ -1955,7 +2165,7 @@
         "path": "scripts/card_database.gd",
         "type": "file",
         "mode": "100644",
-        "object": "756e5f7de51331fd56afc178b7743f0db2dd7257"
+        "object": "57eeb6eeabfc6e2e3d701cd217883ee07734af0c"
       },
       {
         "path": "scripts/card_database.gd.uid",
@@ -1967,7 +2177,7 @@
         "path": "scripts/card_face.gd",
         "type": "file",
         "mode": "100644",
-        "object": "63a2cf56c40c01cb5dd690bfc48018de487c19cf"
+        "object": "7c48ddf95953e3ec51771e7b2e5a8bbc9594459d"
       },
       {
         "path": "scripts/card_face.gd.uid",
@@ -1979,7 +2189,7 @@
         "path": "scripts/card_game.gd",
         "type": "file",
         "mode": "100644",
-        "object": "708e4286be2273f1d5d348e7ff21676755c6b8d2"
+        "object": "692c061606e3190e6ef4e10d830ec92aad8bed43"
       },
       {
         "path": "scripts/card_game.gd.uid",
@@ -2207,7 +2417,7 @@
         "path": "scripts/smoke_test.gd",
         "type": "file",
         "mode": "100644",
-        "object": "20a9fad23c7a490001bca01c62462d20ae55d661"
+        "object": "fd4a127ede75a0255e6611ce3502bcd3dddd46c3"
       },
       {
         "path": "scripts/smoke_test.gd.uid",
@@ -2238,6 +2448,12 @@
         "type": "file",
         "mode": "100644",
         "object": "62fe0c2e225646f79251d3d3cce7001492d2e566"
+      },
+      {
+        "path": "source-art/attack-slash.gif",
+        "type": "file",
+        "mode": "100644",
+        "object": "cc7c55f9d18d8f75b6fcd2f90c378978dabcfd90"
       },
       {
         "path": "template-provenance.json",
@@ -2572,7 +2788,7 @@
     ]
   },
   "build": {
-    "snapshotId": "sha256:aca164674b4eca5f5d3bb09246f34209997f42f40e6df35d4b8924054aeb495b",
+    "snapshotId": "sha256:fd338b6e6c96e55f4427e19f7cfd553471c34efad6df653e521045f686c756d4",
     "toolchain": {
       "engineVersion": "4.7.2.stable.official.ed1daf0bf",
       "engineDigest": "sha256:3fcb80f4fe794e3859360eb641d8c41d8ffe2c2e54ba1981e55a76851d5ed1f4",
@@ -2585,21 +2801,21 @@
     "profile": "release",
     "export": {
       "profile": "release",
-      "snapshotId": "sha256:aca164674b4eca5f5d3bb09246f34209997f42f40e6df35d4b8924054aeb495b",
+      "snapshotId": "sha256:fd338b6e6c96e55f4427e19f7cfd553471c34efad6df653e521045f686c756d4",
       "files": {
         "THIRD_PARTY_NOTICES.txt": "sha256:889699801d4b21f0cf9646c9a53aeadbcbeb07a7cd26ed9e15f564d63e4c0afb",
         "index.apple-touch-icon.png": "sha256:aa2fcc52d09016e33053b063bcd12a4fda089d55c79b3bd15e7389e6a18c0b88",
         "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
         "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-        "index.html": "sha256:1f5b1a46ab7785bec6d5e35d3d52eca5538d10a3b74a1945f000aafc4daa24f7",
+        "index.html": "sha256:c695df22ac7ea5d30f9987832e1aef4030d876908fc8659bd254563d55021469",
         "index.icon.png": "sha256:d7ea316f4dd1f99c147dbd9810aa7b2f2c62064f48eec9fa3860d939e16632cd",
         "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
-        "index.pck": "sha256:e31fa8cdb87636482b9c48e7b3fe3cd82b3e19d0bf95f10f1ff3d1aaae07a7dd",
+        "index.pck": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941",
         "index.png": "sha256:d6ab1109b14d18c9dfdef4935f6b7635a092744656820895a4274c334050057e",
         "index.wasm": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
         "open-source-licenses.html": "sha256:991cfdad42bc1a9b2298cdab75bc25f641a65e4a6da89f2a74daf2c191977bcf"
       },
-      "digest": "sha256:979ac692cce163e7a3b802d7e97a65fc69bca2efe59581730c59e2a87499819d"
+      "digest": "sha256:68a3a5a5e2fbc9158fafd36837461df1c00096444c5c9f7cdc5d64db44cbd9d1"
     }
   },
   "artifacts": {
@@ -2608,8 +2824,8 @@
       "sha256": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
     },
     "pck": {
-      "path": "/manus-storage/game/sha256/e31fa8cdb87636482b9c48e7b3fe3cd82b3e19d0bf95f10f1ff3d1aaae07a7dd.pck",
-      "sha256": "sha256:e31fa8cdb87636482b9c48e7b3fe3cd82b3e19d0bf95f10f1ff3d1aaae07a7dd"
+      "path": "/manus-storage/game/sha256/bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941.pck",
+      "sha256": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941"
     }
   },
   "files": {
@@ -2618,7 +2834,7 @@
     "index.apple-touch-icon.png": "sha256:aa2fcc52d09016e33053b063bcd12a4fda089d55c79b3bd15e7389e6a18c0b88",
     "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
     "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-    "index.html": "sha256:28e2591f17e3a0862e2327e53e08750a2b57a0b9ca21d2297310c450f756d6f0",
+    "index.html": "sha256:5b18920f6ab1c868b63aa8c550683b625e7be6d5ab4a01a21b6ea70af15382f0",
     "index.icon.png": "sha256:d7ea316f4dd1f99c147dbd9810aa7b2f2c62064f48eec9fa3860d939e16632cd",
     "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
     "index.png": "sha256:d6ab1109b14d18c9dfdef4935f6b7635a092744656820895a4274c334050057e",

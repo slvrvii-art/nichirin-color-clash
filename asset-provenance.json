@@ -578,6 +578,402 @@
       "used": false,
       "usedBy": []
     },
+    "assets/interface/attack_slash_01.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:4ae461943e2e8c6366b980f3b8df1a0be221ef9f4b9c06bd8ab76a7ddc495dad",
+      "shipped": true,
+      "size": 202884,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_02.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:941bae63704c196384d016621e22b552bb8d463104a1faa5eb2a96d8ee50c048",
+      "shipped": true,
+      "size": 177712,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_03.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:2b07000bc7187622663280684b5f97e63e00455604f50106aa71ce01e725f902",
+      "shipped": true,
+      "size": 168858,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_04.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:4d15377b2b8cdfd5bd21b7122b6e632e8d82e469ede159a5e476e03be692baa9",
+      "shipped": true,
+      "size": 213270,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_05.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:3fbad4cbb8bad447d9fcad2a3be350de1ac95e87d685f0de7ceb3dd5d72cbff1",
+      "shipped": true,
+      "size": 198888,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_06.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:db1820167ebe199b446b4b374e8e5b2c6d96b6a46aa85e55f3d20e9125c8e5b7",
+      "shipped": true,
+      "size": 119122,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_07.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:7f17fd346ce95d8e11bd3aff9080af78ea13518099fe701dda807e089154efd7",
+      "shipped": true,
+      "size": 95326,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_08.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:233d728ea263f812426d09c5b5fb38521f044dc543d1009ccbad179c68876da0",
+      "shipped": true,
+      "size": 179170,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_09.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:191fff3db0797675c12d645b0bba98560503b8f0d2d399dd5d5f6c6f65c3d8cb",
+      "shipped": true,
+      "size": 160322,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_10.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:2d6ac1851e84895c490a9fc6116b449dd7ac10f7d53a912f4e6864cdb68895c5",
+      "shipped": true,
+      "size": 170536,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_11.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:f2dbb64d1fb7e1662b48d1181e2c907169495a0227ec13a0f492804f809780e2",
+      "shipped": true,
+      "size": 213066,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_12.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:4208fffa7fec8ca4abcd6a056893f23cc73a807b3963169a67be64e7414a0b0b",
+      "shipped": true,
+      "size": 186216,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_13.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:daf322052dfc22c66acc05207be939fb661649e255273edfbf7218ffddbab407",
+      "shipped": true,
+      "size": 122136,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_14.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:9a2b5400ecfe4c0eecabe75a6b00c966aa247fd0b2b8a94315348d35d931fa39",
+      "shipped": true,
+      "size": 89616,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_15.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:f2b2a6078eae186f84ff1a001d4b55ca0dd4dee5f0fae4ec8c0e0d99ee2ba62a",
+      "shipped": true,
+      "size": 25828,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_16.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:431a1aded1193c1903d7ee0536b2a094f3ccc9c4b1b15b0cdd9d552a11bdcb54",
+      "shipped": true,
+      "size": 9844,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_17.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:02e10ff785d5143d5a2bc84f88fa6066666131ac2f42739f8607a2d0bf83d87b",
+      "shipped": true,
+      "size": 3290,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
+    "assets/interface/attack_slash_18.webp": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "regions": [],
+      "sha256": "sha256:810bda1343742461bb3fccf7de40b53b0651966574d375f24c5b475aa92132f5",
+      "shipped": true,
+      "size": 1240,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "assets/interface/attack_slash_frames.tres"
+      ],
+      "used": true,
+      "usedBy": []
+    },
     "assets/interface/board.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -2932,6 +3328,24 @@
       ],
       "used": true,
       "usedBy": []
+    },
+    "source-art/attack-slash.gif": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:cfb231b73f6cee47f179cdc9ca7ebe14e250f9043177e3b313a215d43480249c",
+      "shipped": false,
+      "size": 6458493,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
     }
   },
   "discoveries": {},
@@ -2979,9 +3393,9 @@
         ]
       }
     ],
-    "pckSha256": "sha256:e31fa8cdb87636482b9c48e7b3fe3cd82b3e19d0bf95f10f1ff3d1aaae07a7dd",
+    "pckSha256": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941",
     "profile": "release",
-    "sourceFingerprint": "sha256:092a681ee5700e90b5d55fcd315f665fda8ffbf38ac163d91171f097ae1543b0"
+    "sourceFingerprint": "sha256:2736a9301ad99f328160eba8abc58215b62b393803bef1044cb3d16340a71b01"
   },
   "procedures": {},
   "summary": {
@@ -3014,9 +3428,9 @@
     },
     "files": {
       "downloaded": 0,
-      "retained": 142,
-      "shipped": 142,
-      "used": 68
+      "retained": 161,
+      "shipped": 160,
+      "used": 86
     },
     "origins": {
       "ai": {
@@ -3050,9 +3464,9 @@
         "used": 1
       },
       "unknown": {
-        "retained": 140,
-        "shipped": 140,
-        "used": 66
+        "retained": 159,
+        "shipped": 158,
+        "used": 84
       }
     },
     "packs": {

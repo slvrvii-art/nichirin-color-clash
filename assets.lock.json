@@ -13,6 +13,10 @@
       "name": "Game Identity",
       "order": 40
     },
+    "interface": {
+      "name": "Interface",
+      "order": 60
+    },
     "support-cards": {
       "name": "Support Cards",
       "order": 20
@@ -22,7 +26,37 @@
       "order": 0
     }
   },
-  "bundles": {},
+  "bundles": {
+    "interface-attack-slash": {
+      "name": "Nichirin Attack Slash",
+      "assetType": "animation",
+      "groupId": "interface",
+      "frames": [
+        "assets/interface/attack_slash_01.webp",
+        "assets/interface/attack_slash_02.webp",
+        "assets/interface/attack_slash_03.webp",
+        "assets/interface/attack_slash_04.webp",
+        "assets/interface/attack_slash_05.webp",
+        "assets/interface/attack_slash_06.webp",
+        "assets/interface/attack_slash_07.webp",
+        "assets/interface/attack_slash_08.webp",
+        "assets/interface/attack_slash_09.webp",
+        "assets/interface/attack_slash_10.webp",
+        "assets/interface/attack_slash_11.webp",
+        "assets/interface/attack_slash_12.webp",
+        "assets/interface/attack_slash_13.webp",
+        "assets/interface/attack_slash_14.webp",
+        "assets/interface/attack_slash_15.webp",
+        "assets/interface/attack_slash_16.webp",
+        "assets/interface/attack_slash_17.webp",
+        "assets/interface/attack_slash_18.webp"
+      ],
+      "fps": 20,
+      "loop": false,
+      "coverFrame": "assets/interface/attack_slash_01.webp",
+      "descriptor": "assets/interface/attack_slash.animation.json"
+    }
+  },
   "assets": {
     "assets/fighters/akaza.png": {
       "path": "/manus-storage/game/sha256/788a728b06dd4a938f4d03936bcf80ce6617145e1d9c37e263400db4d24b8572.png",
@@ -255,6 +289,150 @@
       "assetType": "image",
       "groupId": "character-cards",
       "used": false
+    },
+    "assets/interface/attack_slash_01.webp": {
+      "path": "/manus-storage/game/sha256/4ae461943e2e8c6366b980f3b8df1a0be221ef9f4b9c06bd8ab76a7ddc495dad.webp",
+      "sha256": "sha256:4ae461943e2e8c6366b980f3b8df1a0be221ef9f4b9c06bd8ab76a7ddc495dad",
+      "size": 202884,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_02.webp": {
+      "path": "/manus-storage/game/sha256/941bae63704c196384d016621e22b552bb8d463104a1faa5eb2a96d8ee50c048.webp",
+      "sha256": "sha256:941bae63704c196384d016621e22b552bb8d463104a1faa5eb2a96d8ee50c048",
+      "size": 177712,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_03.webp": {
+      "path": "/manus-storage/game/sha256/2b07000bc7187622663280684b5f97e63e00455604f50106aa71ce01e725f902.webp",
+      "sha256": "sha256:2b07000bc7187622663280684b5f97e63e00455604f50106aa71ce01e725f902",
+      "size": 168858,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_04.webp": {
+      "path": "/manus-storage/game/sha256/4d15377b2b8cdfd5bd21b7122b6e632e8d82e469ede159a5e476e03be692baa9.webp",
+      "sha256": "sha256:4d15377b2b8cdfd5bd21b7122b6e632e8d82e469ede159a5e476e03be692baa9",
+      "size": 213270,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_05.webp": {
+      "path": "/manus-storage/game/sha256/3fbad4cbb8bad447d9fcad2a3be350de1ac95e87d685f0de7ceb3dd5d72cbff1.webp",
+      "sha256": "sha256:3fbad4cbb8bad447d9fcad2a3be350de1ac95e87d685f0de7ceb3dd5d72cbff1",
+      "size": 198888,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_06.webp": {
+      "path": "/manus-storage/game/sha256/db1820167ebe199b446b4b374e8e5b2c6d96b6a46aa85e55f3d20e9125c8e5b7.webp",
+      "sha256": "sha256:db1820167ebe199b446b4b374e8e5b2c6d96b6a46aa85e55f3d20e9125c8e5b7",
+      "size": 119122,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_07.webp": {
+      "path": "/manus-storage/game/sha256/7f17fd346ce95d8e11bd3aff9080af78ea13518099fe701dda807e089154efd7.webp",
+      "sha256": "sha256:7f17fd346ce95d8e11bd3aff9080af78ea13518099fe701dda807e089154efd7",
+      "size": 95326,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_08.webp": {
+      "path": "/manus-storage/game/sha256/233d728ea263f812426d09c5b5fb38521f044dc543d1009ccbad179c68876da0.webp",
+      "sha256": "sha256:233d728ea263f812426d09c5b5fb38521f044dc543d1009ccbad179c68876da0",
+      "size": 179170,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_09.webp": {
+      "path": "/manus-storage/game/sha256/191fff3db0797675c12d645b0bba98560503b8f0d2d399dd5d5f6c6f65c3d8cb.webp",
+      "sha256": "sha256:191fff3db0797675c12d645b0bba98560503b8f0d2d399dd5d5f6c6f65c3d8cb",
+      "size": 160322,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_10.webp": {
+      "path": "/manus-storage/game/sha256/2d6ac1851e84895c490a9fc6116b449dd7ac10f7d53a912f4e6864cdb68895c5.webp",
+      "sha256": "sha256:2d6ac1851e84895c490a9fc6116b449dd7ac10f7d53a912f4e6864cdb68895c5",
+      "size": 170536,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_11.webp": {
+      "path": "/manus-storage/game/sha256/f2dbb64d1fb7e1662b48d1181e2c907169495a0227ec13a0f492804f809780e2.webp",
+      "sha256": "sha256:f2dbb64d1fb7e1662b48d1181e2c907169495a0227ec13a0f492804f809780e2",
+      "size": 213066,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_12.webp": {
+      "path": "/manus-storage/game/sha256/4208fffa7fec8ca4abcd6a056893f23cc73a807b3963169a67be64e7414a0b0b.webp",
+      "sha256": "sha256:4208fffa7fec8ca4abcd6a056893f23cc73a807b3963169a67be64e7414a0b0b",
+      "size": 186216,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_13.webp": {
+      "path": "/manus-storage/game/sha256/daf322052dfc22c66acc05207be939fb661649e255273edfbf7218ffddbab407.webp",
+      "sha256": "sha256:daf322052dfc22c66acc05207be939fb661649e255273edfbf7218ffddbab407",
+      "size": 122136,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_14.webp": {
+      "path": "/manus-storage/game/sha256/9a2b5400ecfe4c0eecabe75a6b00c966aa247fd0b2b8a94315348d35d931fa39.webp",
+      "sha256": "sha256:9a2b5400ecfe4c0eecabe75a6b00c966aa247fd0b2b8a94315348d35d931fa39",
+      "size": 89616,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_15.webp": {
+      "path": "/manus-storage/game/sha256/f2b2a6078eae186f84ff1a001d4b55ca0dd4dee5f0fae4ec8c0e0d99ee2ba62a.webp",
+      "sha256": "sha256:f2b2a6078eae186f84ff1a001d4b55ca0dd4dee5f0fae4ec8c0e0d99ee2ba62a",
+      "size": 25828,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_16.webp": {
+      "path": "/manus-storage/game/sha256/431a1aded1193c1903d7ee0536b2a094f3ccc9c4b1b15b0cdd9d552a11bdcb54.webp",
+      "sha256": "sha256:431a1aded1193c1903d7ee0536b2a094f3ccc9c4b1b15b0cdd9d552a11bdcb54",
+      "size": 9844,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_17.webp": {
+      "path": "/manus-storage/game/sha256/02e10ff785d5143d5a2bc84f88fa6066666131ac2f42739f8607a2d0bf83d87b.webp",
+      "sha256": "sha256:02e10ff785d5143d5a2bc84f88fa6066666131ac2f42739f8607a2d0bf83d87b",
+      "size": 3290,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
+    },
+    "assets/interface/attack_slash_18.webp": {
+      "path": "/manus-storage/game/sha256/810bda1343742461bb3fccf7de40b53b0651966574d375f24c5b475aa92132f5.webp",
+      "sha256": "sha256:810bda1343742461bb3fccf7de40b53b0651966574d375f24c5b475aa92132f5",
+      "size": 1240,
+      "assetType": "image",
+      "groupId": "interface",
+      "used": true
     },
     "assets/interface/board.png": {
       "path": "/manus-storage/game/sha256/db7cd0506f8787d503d257214e69a0c3a7bf91785678cc978a61a37a93a97205.png",
