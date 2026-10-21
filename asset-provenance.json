@@ -18,6 +18,24 @@
       "used": false,
       "usedBy": []
     },
+    "assets/fighters/aoi.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:de78ec6e6616643d234feaa449f946e65f013a6da3f8ff0b3f773264d4f12b60",
+      "shipped": true,
+      "size": 772567,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
     "assets/fighters/daki.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -258,6 +276,24 @@
       "used": false,
       "usedBy": []
     },
+    "assets/fighters/kyogai.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:8b5f33c575d827b436d346ea0870e2c014b1d9f50aac9284fdf0a31724aeea49",
+      "shipped": true,
+      "size": 985864,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
     "assets/fighters/mitsuri.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -287,6 +323,24 @@
       "sha256": "sha256:4f1591ee5fcabe26555d60d8b29dbc1f2625721919431071a8093b27dcdce141",
       "shipped": true,
       "size": 862632,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "assets/fighters/murata.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:41e3fdc91ff70c1c3edf68eef110c4e5a53be31ca45cec4858ffd7b3b3c80c79",
+      "shipped": true,
+      "size": 946030,
       "source": {},
       "status": "present",
       "transformations": [],
@@ -456,6 +510,42 @@
       "used": false,
       "usedBy": []
     },
+    "assets/fighters/susamaru.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:b9e348ff5acf256a2bab3bdb5554b7d4c57975ae058252e8b2df2c9282ddf487",
+      "shipped": true,
+      "size": 907349,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "assets/fighters/susamaru_full.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:1897875206cef61879bc4f9fbec744355bf5a8ab809aa0721ea1db72a020019e",
+      "shipped": true,
+      "size": 1046544,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
     "assets/fighters/tanjiro.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -492,6 +582,24 @@
       "used": false,
       "usedBy": []
     },
+    "assets/fighters/tanjiro_hinokami.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:e8b775def413bdae877d62596f04c5dd531b402801bc38d25ad90444f6076aae",
+      "shipped": true,
+      "size": 1084012,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
     "assets/fighters/tengen.png": {
       "declaredUseEvidence": [],
       "generator": {},
@@ -503,6 +611,24 @@
       "sha256": "sha256:336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941",
       "shipped": true,
       "size": 918314,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "assets/fighters/yahaba.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:0f1cc9ee66ea2ba5b5afb7df7b686a916e71b49f46ed16d362b79b829394b94d",
+      "shipped": true,
+      "size": 725097,
       "source": {},
       "status": "present",
       "transformations": [],
@@ -576,6 +702,28 @@
       "transformations": [],
       "useEvidence": [],
       "used": false,
+      "usedBy": []
+    },
+    "assets/fonts/Bungee-Regular.ttf": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [
+        "scripts/card_face.gd"
+      ],
+      "regions": [],
+      "sha256": "sha256:c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f",
+      "shipped": true,
+      "size": 118996,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [
+        "scripts/card_face.gd"
+      ],
+      "used": true,
       "usedBy": []
     },
     "assets/interface/attack_slash_01.webp": {
@@ -3346,6 +3494,132 @@
       "useEvidence": [],
       "used": false,
       "usedBy": []
+    },
+    "source-art/new/aoi.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:22be2ce22fafbb393f894523544f432c59b54d2728ae279332e3ace4c0c47928",
+      "shipped": true,
+      "size": 4219635,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/kyogai.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:1d9dadc1a86a68a3cee843dd87862e67ccfdf6f3ce600d39e5976eecba8028d8",
+      "shipped": true,
+      "size": 5645771,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/murata.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:b137735b9be61619fe782bb44f554a4cc27d587a2399af188e968e6c42026fc4",
+      "shipped": true,
+      "size": 5010750,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/susamaru.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:6fe57a709e64361c7e34fcee2440876de66700c4e3a2a1f9f4679af54fd97880",
+      "shipped": true,
+      "size": 4971445,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/susamaru_full.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:3d93e4b99a8f0bf092a872113e0abd9979c392a7852fe7da0e3af5f140c7699a",
+      "shipped": true,
+      "size": 5596690,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/tanjiro_hinokami.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:1772b88e2367cc22c4fd9ebbf95c895fcd391ef2e68100acf9e8b115d44d9fb5",
+      "shipped": true,
+      "size": 5902342,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
+    },
+    "source-art/new/yahaba.png": {
+      "declaredUseEvidence": [],
+      "generator": {},
+      "inputs": [],
+      "license": {},
+      "origin": "unknown",
+      "referenceEvidence": [],
+      "regions": [],
+      "sha256": "sha256:4ca5d2a0a491f27c1c68eb2ce94b6c464e5fb2ee37011c95168e10e52db8bd2f",
+      "shipped": true,
+      "size": 4255311,
+      "source": {},
+      "status": "present",
+      "transformations": [],
+      "useEvidence": [],
+      "used": false,
+      "usedBy": []
     }
   },
   "discoveries": {},
@@ -3393,9 +3667,9 @@
         ]
       }
     ],
-    "pckSha256": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941",
+    "pckSha256": "sha256:c9449e4a40d2a4d638dc1d576b23e3ef101ee558a5c015889db54d9fa7449c1a",
     "profile": "release",
-    "sourceFingerprint": "sha256:2736a9301ad99f328160eba8abc58215b62b393803bef1044cb3d16340a71b01"
+    "sourceFingerprint": "sha256:7921e1e710f4d0a5603f7804925c839ef21a28c72a76bb1edd7d9e7a8e71b91b"
   },
   "procedures": {},
   "summary": {
@@ -3428,9 +3702,9 @@
     },
     "files": {
       "downloaded": 0,
-      "retained": 161,
-      "shipped": 160,
-      "used": 86
+      "retained": 176,
+      "shipped": 175,
+      "used": 87
     },
     "origins": {
       "ai": {
@@ -3464,9 +3738,9 @@
         "used": 1
       },
       "unknown": {
-        "retained": 159,
-        "shipped": 158,
-        "used": 84
+        "retained": 174,
+        "shipped": 173,
+        "used": 85
       }
     },
     "packs": {

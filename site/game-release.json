@@ -3,7 +3,7 @@
   "engineVersion": "4.7.2.stable.official.ed1daf0bf",
   "inputs": {
     "objectFormat": "sha1",
-    "tree": "a9af777eef70af46c18653721efa036317c9466d",
+    "tree": "eecc86dc8b5d7bc05dd0cc512af21ba2e435de9b",
     "entries": [
       {
         "path": ".gitignore",
@@ -33,13 +33,13 @@
         "path": "THIRD_PARTY_NOTICES.md",
         "type": "file",
         "mode": "100644",
-        "object": "8ed615fd13d7932f523e3a17b5100607ab17444a"
+        "object": "cd4c66063527ae1b513fcadc43eee9b301ba79ae"
       },
       {
         "path": "TODO.md",
         "type": "file",
         "mode": "100644",
-        "object": "9f6783956159d842dc6a3c188e91b9d38413b196"
+        "object": "4449b37b644079465778389cf0eb0b74c720d53a"
       },
       {
         "path": "app.config.ts",
@@ -51,7 +51,7 @@
         "path": "assets.lock.json",
         "type": "file",
         "mode": "100644",
-        "object": "017025c30dcbfa9bcd2c9aee562d6c92367bc251"
+        "object": "87c469e5943e5b63dc03128017584d2c80191000"
       },
       {
         "path": "assets/fighters/akaza.png",
@@ -63,6 +63,17 @@
         "type": "file",
         "mode": "100644",
         "object": "768b6265a0fc758ce47fc184395f4547b3c61872"
+      },
+      {
+        "path": "assets/fighters/aoi.png",
+        "type": "managed",
+        "sha256": "sha256:de78ec6e6616643d234feaa449f946e65f013a6da3f8ff0b3f773264d4f12b60"
+      },
+      {
+        "path": "assets/fighters/aoi.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "6728a584b3153b5fd00add4b8d1cd9f3b85dca8d"
       },
       {
         "path": "assets/fighters/daki.png",
@@ -186,6 +197,17 @@
         "object": "1141f2fba68422a4521f5096e97bc6fdb97ee918"
       },
       {
+        "path": "assets/fighters/kyogai.png",
+        "type": "managed",
+        "sha256": "sha256:8b5f33c575d827b436d346ea0870e2c014b1d9f50aac9284fdf0a31724aeea49"
+      },
+      {
+        "path": "assets/fighters/kyogai.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "9ab0242bb1428095debe5c254736db7e744dc540"
+      },
+      {
         "path": "assets/fighters/mitsuri.png",
         "type": "managed",
         "sha256": "sha256:a7586d5bdf425b9e047165c20e8d00ecdf72f1a1ab181f79b86174e86053ba89"
@@ -206,6 +228,17 @@
         "type": "file",
         "mode": "100644",
         "object": "f1f92c22294ff401777f604990dff286a9a5d97e"
+      },
+      {
+        "path": "assets/fighters/murata.png",
+        "type": "managed",
+        "sha256": "sha256:41e3fdc91ff70c1c3edf68eef110c4e5a53be31ca45cec4858ffd7b3b3c80c79"
+      },
+      {
+        "path": "assets/fighters/murata.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "e1b5b5c6610eff3a3c98ee477dfa723b7c0113ef"
       },
       {
         "path": "assets/fighters/muzan.png",
@@ -307,6 +340,28 @@
         "object": "8bcca6ec7c2f0e563807d3f2f117a17320e0a164"
       },
       {
+        "path": "assets/fighters/susamaru.png",
+        "type": "managed",
+        "sha256": "sha256:b9e348ff5acf256a2bab3bdb5554b7d4c57975ae058252e8b2df2c9282ddf487"
+      },
+      {
+        "path": "assets/fighters/susamaru.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "4329f9fdb76fd6b5456a9d63a5c83ce8ada39a9d"
+      },
+      {
+        "path": "assets/fighters/susamaru_full.png",
+        "type": "managed",
+        "sha256": "sha256:1897875206cef61879bc4f9fbec744355bf5a8ab809aa0721ea1db72a020019e"
+      },
+      {
+        "path": "assets/fighters/susamaru_full.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "7cc75d3eb70620c14e4b3dcb02f418826dec00dd"
+      },
+      {
         "path": "assets/fighters/tanjiro.png",
         "type": "managed",
         "sha256": "sha256:ffdaeaf740aa4678d684a3ab2e6851bd0c4b26234072a200d5a7652146a3dc90"
@@ -329,6 +384,17 @@
         "object": "e5d2c7545d6304ab9e4477dc603014dc6f7a676c"
       },
       {
+        "path": "assets/fighters/tanjiro_hinokami.png",
+        "type": "managed",
+        "sha256": "sha256:e8b775def413bdae877d62596f04c5dd531b402801bc38d25ad90444f6076aae"
+      },
+      {
+        "path": "assets/fighters/tanjiro_hinokami.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "d8978bc525850694f05b5accf8ceb7a14f1cb847"
+      },
+      {
         "path": "assets/fighters/tengen.png",
         "type": "managed",
         "sha256": "sha256:336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941"
@@ -338,6 +404,17 @@
         "type": "file",
         "mode": "100644",
         "object": "a510c380b51767de99808c23c8a603d7a09befd5"
+      },
+      {
+        "path": "assets/fighters/yahaba.png",
+        "type": "managed",
+        "sha256": "sha256:0f1cc9ee66ea2ba5b5afb7df7b686a916e71b49f46ed16d362b79b829394b94d"
+      },
+      {
+        "path": "assets/fighters/yahaba.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "d6e5fb66bd9ce876b1c14ab9882aba7813656575"
       },
       {
         "path": "assets/fighters/yoriichi.png",
@@ -371,6 +448,23 @@
         "type": "file",
         "mode": "100644",
         "object": "c8e365044128f2fa48ecc88d40c61bef521353fd"
+      },
+      {
+        "path": "assets/fonts/Bungee-OFL.txt",
+        "type": "file",
+        "mode": "100644",
+        "object": "6f47072f01b8698301896b247b7087c023a4da2d"
+      },
+      {
+        "path": "assets/fonts/Bungee-Regular.ttf",
+        "type": "managed",
+        "sha256": "sha256:c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f"
+      },
+      {
+        "path": "assets/fonts/Bungee-Regular.ttf.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "83a3a20272be39889346e2dfc747403c614a96b9"
       },
       {
         "path": "assets/interface/attack_slash.animation.json",
@@ -603,6 +697,18 @@
         "type": "file",
         "mode": "100644",
         "object": "dcddb3f23ccadf485e72168f5e088ac0c2f42f61"
+      },
+      {
+        "path": "assets/interface/surge_gold.gdshader",
+        "type": "file",
+        "mode": "100644",
+        "object": "57addbeeb3bb176ed0d6a28345fe053b00485a0a"
+      },
+      {
+        "path": "assets/interface/surge_gold.gdshader.uid",
+        "type": "file",
+        "mode": "100644",
+        "object": "366147585866008aca3903ade51730e8995a576b"
       },
       {
         "path": "assets/share/favicon.png",
@@ -2165,7 +2271,7 @@
         "path": "scripts/card_database.gd",
         "type": "file",
         "mode": "100644",
-        "object": "57eeb6eeabfc6e2e3d701cd217883ee07734af0c"
+        "object": "ac8c4f26d1827719841375cc25b1d56917e7522c"
       },
       {
         "path": "scripts/card_database.gd.uid",
@@ -2177,7 +2283,7 @@
         "path": "scripts/card_face.gd",
         "type": "file",
         "mode": "100644",
-        "object": "7c48ddf95953e3ec51771e7b2e5a8bbc9594459d"
+        "object": "94c45a720480f5953140678d746df342d74c9cc5"
       },
       {
         "path": "scripts/card_face.gd.uid",
@@ -2189,7 +2295,7 @@
         "path": "scripts/card_game.gd",
         "type": "file",
         "mode": "100644",
-        "object": "692c061606e3190e6ef4e10d830ec92aad8bed43"
+        "object": "4900ba2bbe7fd96cac98a15ee88284e03b91504e"
       },
       {
         "path": "scripts/card_game.gd.uid",
@@ -2417,7 +2523,7 @@
         "path": "scripts/smoke_test.gd",
         "type": "file",
         "mode": "100644",
-        "object": "fd4a127ede75a0255e6611ce3502bcd3dddd46c3"
+        "object": "e2a221e02c05a7a13e1ee6832287a3eec9f6e21d"
       },
       {
         "path": "scripts/smoke_test.gd.uid",
@@ -2454,6 +2560,90 @@
         "type": "file",
         "mode": "100644",
         "object": "cc7c55f9d18d8f75b6fcd2f90c378978dabcfd90"
+      },
+      {
+        "path": "source-art/new/aoi.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "91bb026670c0e360c56bc26d41fc0ff4c6549bfc"
+      },
+      {
+        "path": "source-art/new/aoi.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "b97e5983a469fda3cc54e36713513d602cf17e13"
+      },
+      {
+        "path": "source-art/new/kyogai.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "8b35814b1f90f760210ea7c86d2a3f33b7ff9f16"
+      },
+      {
+        "path": "source-art/new/kyogai.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "1b4fee28ab709b6d3bdb08a83cafb2ec64b90c1b"
+      },
+      {
+        "path": "source-art/new/murata.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "ad740496052bb5838a50354f07998d1ddc8ad00f"
+      },
+      {
+        "path": "source-art/new/murata.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "5b024e41e07556b7c7ed390608de38ad14160077"
+      },
+      {
+        "path": "source-art/new/susamaru.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "98046a7ca2dbbb55feeaf7dbcb321d815752c2da"
+      },
+      {
+        "path": "source-art/new/susamaru.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "9b6275bfa48cf9546a4834bdacd9fd5ffb25055d"
+      },
+      {
+        "path": "source-art/new/susamaru_full.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "d5360780e9d4a448f3a0c4e176c23dda6722025d"
+      },
+      {
+        "path": "source-art/new/susamaru_full.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "2585461d0cc990d7690c683c77fa78736b7357a5"
+      },
+      {
+        "path": "source-art/new/tanjiro_hinokami.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "f429fb4142c26261ffecbf163ce193c9afc25a63"
+      },
+      {
+        "path": "source-art/new/tanjiro_hinokami.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "3549ac8bef69cd565e742759adb9844bef5ae51e"
+      },
+      {
+        "path": "source-art/new/yahaba.png",
+        "type": "file",
+        "mode": "100644",
+        "object": "278cd1a9d6be161036a36a42c8aaf7156f80afca"
+      },
+      {
+        "path": "source-art/new/yahaba.png.import",
+        "type": "file",
+        "mode": "100644",
+        "object": "e0ac2320e43c104c60eb4e168acbd0f571a39fde"
       },
       {
         "path": "template-provenance.json",
@@ -2788,7 +2978,7 @@
     ]
   },
   "build": {
-    "snapshotId": "sha256:fd338b6e6c96e55f4427e19f7cfd553471c34efad6df653e521045f686c756d4",
+    "snapshotId": "sha256:2eae3bb4c3dd8cf9d418ec49c7431558f08af741eff351b8dd0e6177081f26c5",
     "toolchain": {
       "engineVersion": "4.7.2.stable.official.ed1daf0bf",
       "engineDigest": "sha256:3fcb80f4fe794e3859360eb641d8c41d8ffe2c2e54ba1981e55a76851d5ed1f4",
@@ -2801,21 +2991,21 @@
     "profile": "release",
     "export": {
       "profile": "release",
-      "snapshotId": "sha256:fd338b6e6c96e55f4427e19f7cfd553471c34efad6df653e521045f686c756d4",
+      "snapshotId": "sha256:2eae3bb4c3dd8cf9d418ec49c7431558f08af741eff351b8dd0e6177081f26c5",
       "files": {
-        "THIRD_PARTY_NOTICES.txt": "sha256:889699801d4b21f0cf9646c9a53aeadbcbeb07a7cd26ed9e15f564d63e4c0afb",
+        "THIRD_PARTY_NOTICES.txt": "sha256:fabed54956d6cea7df2dce0c1041f5e06885c4e05921d69d46082396088888ba",
         "index.apple-touch-icon.png": "sha256:aa2fcc52d09016e33053b063bcd12a4fda089d55c79b3bd15e7389e6a18c0b88",
         "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
         "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-        "index.html": "sha256:c695df22ac7ea5d30f9987832e1aef4030d876908fc8659bd254563d55021469",
+        "index.html": "sha256:7508926d6156099e4541a640c5c7366d3ce5370d1e3c7db3552c0818f62bf7f1",
         "index.icon.png": "sha256:d7ea316f4dd1f99c147dbd9810aa7b2f2c62064f48eec9fa3860d939e16632cd",
         "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
-        "index.pck": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941",
+        "index.pck": "sha256:c9449e4a40d2a4d638dc1d576b23e3ef101ee558a5c015889db54d9fa7449c1a",
         "index.png": "sha256:d6ab1109b14d18c9dfdef4935f6b7635a092744656820895a4274c334050057e",
         "index.wasm": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0",
-        "open-source-licenses.html": "sha256:991cfdad42bc1a9b2298cdab75bc25f641a65e4a6da89f2a74daf2c191977bcf"
+        "open-source-licenses.html": "sha256:4491d5e17c03ae8c05c450647e8bb96c33bd11cbcfcb5c0c845050012dc580f2"
       },
-      "digest": "sha256:68a3a5a5e2fbc9158fafd36837461df1c00096444c5c9f7cdc5d64db44cbd9d1"
+      "digest": "sha256:6b26e511c87c2625b5e06cc077d1659f363897cf810df41894f4d836c328c618"
     }
   },
   "artifacts": {
@@ -2824,22 +3014,22 @@
       "sha256": "sha256:fc74679e3b97f76878947fcd4fbe1268cbfa6188182a2e33bbc3f5dc9bfa57d0"
     },
     "pck": {
-      "path": "/manus-storage/game/sha256/bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941.pck",
-      "sha256": "sha256:bbb806cd9e3daeb2c0389a7b50c6f5d225db2cee4ae393670b86d56815408941"
+      "path": "/manus-storage/game/sha256/c9449e4a40d2a4d638dc1d576b23e3ef101ee558a5c015889db54d9fa7449c1a.pck",
+      "sha256": "sha256:c9449e4a40d2a4d638dc1d576b23e3ef101ee558a5c015889db54d9fa7449c1a"
     }
   },
   "files": {
-    "THIRD_PARTY_NOTICES.txt": "sha256:889699801d4b21f0cf9646c9a53aeadbcbeb07a7cd26ed9e15f564d63e4c0afb",
+    "THIRD_PARTY_NOTICES.txt": "sha256:fabed54956d6cea7df2dce0c1041f5e06885c4e05921d69d46082396088888ba",
     "game-sharing.json": "sha256:e46749618e3939025e89d10de9111d62b77b3a93221ea2c8306799ff31840e5f",
     "index.apple-touch-icon.png": "sha256:aa2fcc52d09016e33053b063bcd12a4fda089d55c79b3bd15e7389e6a18c0b88",
     "index.audio.position.worklet.js": "sha256:be33985bc7160d6bf9646f259cd86b259cd67b02ccb297ee5c44f8ac84327bc8",
     "index.audio.worklet.js": "sha256:5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3",
-    "index.html": "sha256:5b18920f6ab1c868b63aa8c550683b625e7be6d5ab4a01a21b6ea70af15382f0",
+    "index.html": "sha256:208c4f2682a0845c560369a1755894e42e6ea18117b99c8393f409410fda6c82",
     "index.icon.png": "sha256:d7ea316f4dd1f99c147dbd9810aa7b2f2c62064f48eec9fa3860d939e16632cd",
     "index.js": "sha256:cb28c2d8ffd8981888823f1b6d98cdec4e3e11adf209ad556c22878e6d51c63a",
     "index.png": "sha256:d6ab1109b14d18c9dfdef4935f6b7635a092744656820895a4274c334050057e",
     "multiplayer/bootstrap.json": "sha256:42e3d4700501e0ac010a829e49b9dc21f084746c688dd8e8f3da1d15f115ff6c",
-    "open-source-licenses.html": "sha256:991cfdad42bc1a9b2298cdab75bc25f641a65e4a6da89f2a74daf2c191977bcf",
+    "open-source-licenses.html": "sha256:4491d5e17c03ae8c05c450647e8bb96c33bd11cbcfcb5c0c845050012dc580f2",
     "share/2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177.png": "sha256:2c49c45c5c84c0445c518355113238e87620cd3069908cfd9968bf6c37ba7177",
     "share/429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db.png": "sha256:429d77ad950a704f19b671a69ed03b6fe71bdb6ffa1d9f44bb9f5ca3837654db"
   }

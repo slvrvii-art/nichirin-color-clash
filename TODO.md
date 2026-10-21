@@ -6,4 +6,12 @@
 - [x] Status effects: Sleep, Poison, Burn and Paralysis on selected attacks, with turn-start coin flips, damage ticks, retreat clears, curing Items/Supports, status pills, logged coin results and clearing on knockout.
 - [x] Attack animation: User-supplied 18-frame slash GIF plays once per attack with a transparent background; damage feedback stays separate; original GIF preserved in source-art.
 - [x] Existing battle flow: Muzan's once-per-turn Blood Dominion, auto turn end on attack, explicit End Turn, turn banner, deck limit, bench capacity and AI.
-- [ ] Updated delivery: Tests and native renders pass; prepare the pack and confirm the managed checkpoint.
+- [x] Updated delivery: Tests and native renders pass; checkpoint b0a2bf3 saved and published.
+
+## Boost update
+- [x] Normal fighters: basic art, one attack. SURGE fighters: full art.
+- [x] Boost mechanic: SURGE cards with a Normal version must Boost onto it; standalone SURGE cards play directly.
+- [x] Removed Muzan, Yoriichi, Kokushibo, Kanao, Gyomei, Doma, Sanemi and Obanai.
+- [x] New fighters: Murata, Kyogai SURGE, Aoi Kanzaki, Susamaru (Normal + SURGE), Yahaba, Tanjiro (Hinokami Kagura) SURGE.
+- [x] Gold metallic gradient SURGE wordmark in the Bungee font.
+- [x] Tests, native renders and checkpoint.

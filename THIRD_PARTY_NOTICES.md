@@ -12,6 +12,7 @@ beside the font files:
 | Cinzel | Headings, card and hero names | OFL-1.1: [Cinzel-OFL.txt](assets/template/fonts/display/Cinzel-OFL.txt) |
 | Noto Serif SC | Chinese titles, headings and names | OFL-1.1: [NotoSerifSC-OFL.txt](assets/template/fonts/display/NotoSerifSC-OFL.txt) |
 | Noto Sans SC | Chinese body text and fallback | OFL-1.1: [NotoSansSC-OFL.txt](assets/template/fonts/NotoSansSC-OFL.txt) |
+| Bungee | SURGE card lettering | OFL-1.1: [Bungee-OFL.txt](assets/fonts/Bungee-OFL.txt) |
 
 See [runtime font sources](assets/template/fonts/SOURCES.md) for the exact current
 filenames and [replacement evidence](docs/provenance/fonts/replacement-fonts.json)

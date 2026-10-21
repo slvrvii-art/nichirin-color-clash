@@ -58,6 +58,9 @@ var attack_gif_animations := 0
 var damage_animations := 0
 var turn_animations := 0
 var coin_flip_overrides: Array = []
+var attack_targeting := -1
+var pending_boost_flash := ""
+var boost_animations := 0
 
 func _ready() -> void:
 	TranslationServer.set_locale("en")
@@ -168,19 +171,27 @@ func _home() -> void:
 	_panel(root_ui,Rect2(154,139,505,368),Color("#101b2a"),Color.TRANSPARENT,10)
 	_text(root_ui,"DEMON SLAYER • CARD BATTLES",Rect2(185,172,425,24),11,GOLD,MEDIUM)
 	_text(root_ui,"Draw your\nblade.",Rect2(185,218,440,139),49,CREAM,DISPLAY)
-	_text(root_ui,"Master Color Energy. Build your 20-card deck.\nTurn one decisive strike into victory.",Rect2(188,363,432,52),16,MUTED)
+	_text(root_ui,"Master Color Energy. Build your 20-card deck.\nBoost your fighters into their SURGE forms.",Rect2(188,363,432,52),16,MUTED)
 	_button(root_ui,"ENTER BATTLE   →",Rect2(185,433,227,49),_start_battle,true,14)
 	_button(root_ui,"BUILD A DECK",Rect2(426,433,197,49),func(): _go("deck"),false,13)
 	_text(root_ui,"FEATURED BLADES",Rect2(154,543,640,29),21,CREAM,DISPLAY)
-	_text(root_ui,"SURGE EDITIONS • ALTERNATE FULL ART",Rect2(155,578,710,22),10,GOLD)
+	_text(root_ui,"SURGE EDITIONS • FULL ART",Rect2(155,578,710,22),10,GOLD)
 	for i in range(4):
-		var id: String = ["tanjiro_surge","rengoku_surge","nezuko_surge","giyu_surge"][i]
+		var id: String = ["tanjiro_hinokami_surge","rengoku_surge","nezuko_surge","kyogai_surge"][i]
 		_card(root_ui,cards_by_id[id],Rect2(155+i*215,615,192,230),func(): _card_detail(id))
+	var fighters := 0
+	var supports := 0
+	var items := 0
+	for card in catalog:
+		match str(card.kind):
+			"Fighter": fighters += 1
+			"Support": supports += 1
+			"Item": items += 1
 	_panel(root_ui,Rect2(1048,545,350,301),PANEL,Color("#2c394b"),10)
 	_text(root_ui,"YOUR ARMORY",Rect2(1070,567,310,25),20,CREAM,DISPLAY)
-	_text(root_ui,"150",Rect2(1072,607,180,61),49,GOLD,DISPLAY)
+	_text(root_ui,str(catalog.size()),Rect2(1072,607,180,61),49,GOLD,DISPLAY)
 	_text(root_ui,"PLAYABLE CARDS",Rect2(1073,671,288,20),11,MUTED)
-	_text(root_ui,"24 characters  /  Normal + SURGE\n53 Support  /  49 Item cards",Rect2(1073,708,296,45),14,CREAM)
+	_text(root_ui,"%d fighters  /  Normal + SURGE\n%d Support  /  %d Item cards" % [fighters,supports,items],Rect2(1073,708,296,45),14,CREAM)
 	_button(root_ui,"EXPLORE COLLECTION   →",Rect2(1071,779,301,44),func(): _go("collection"),false,12)
 
 func _filtered() -> Array[Dictionary]:
@@ -199,7 +210,7 @@ func _filtered() -> Array[Dictionary]:
 
 func _collection() -> void:
 	var building: bool = screen_name == "deck"
-	_header("DECK BUILDER" if building else "CARD COLLECTION","A 20-card limit. Countless ways to draw your blade." if building else "Browse all 150 cards. Every fighter comes in Normal and SURGE editions.")
+	_header("DECK BUILDER" if building else "CARD COLLECTION","A 20-card limit. Countless ways to draw your blade." if building else "Browse all %d cards. Normal fighters Boost into their full-art SURGE forms." % catalog.size())
 	var search := LineEdit.new()
 	search.position = Vector2(155,140)
 	search.size = Vector2(283,43)
@@ -212,8 +223,6 @@ func _collection() -> void:
 	_option(root_ui,["All colors"]+DB.COLORS.keys(),filter_color,Rect2(452,140,174,43),func(value): filter_color=value; page=0; _render())
 	_option(root_ui,["All versions / rarities","Normal","SURGE","Common","Uncommon","Rare","Epic","Legendary"],filter_rarity,Rect2(638,140,174,43),func(value): filter_rarity="All rarities" if value=="All versions / rarities" else value; page=0; _render())
 	_option(root_ui,["All cards","Fighter","Support","Item","SURGE"],filter_kind,Rect2(824,140,174,43),func(value): filter_kind=value; page=0; _render())
-	if not building:
-		_button(root_ui,"FULL ART" if full_art else "BASIC ART",Rect2(1148,140,252,43),func(): full_art=not full_art; _save(); _render(),full_art,12)
 	var filtered := _filtered()
 	var columns := 5 if building else 6
 	var per_page := columns*2
@@ -279,51 +288,61 @@ func _card_detail(id: String) -> void:
 	var card: Dictionary = cards_by_id[id]
 	var box := _modal_box(Rect2(390,115,820,667))
 	_card(box,card,Rect2(28,36,305,466),Callable())
-	_text(box,card.name,Rect2(362,42,419,55),27,CREAM,DISPLAY)
-	_text(box,(str(card.form) if card.kind=="Fighter" else str(card.kind)+"  /  "+str(card.rarity)),Rect2(363,101,421,36),14,GOLD)
-	_text(box,"COLOR TYPE: "+str(card.color).to_upper(),Rect2(364,147,418,30),12,DB.color_for(str(card.color)))
+	_text(box,card.name,Rect2(362,36,430,55),24,CREAM,DISPLAY)
+	var form_line: String = str(card.kind).to_upper()+"  /  "+str(card.rarity).to_upper()
+	if card.kind == "Fighter":
+		if card.surge: form_line = "SURGE  •  FULL ART  •  "+("BOOST FROM NORMAL" if str(card.boost_from)!="" else "STANDALONE")
+		else: form_line = "NORMAL  •  BASIC ART"+("  •  BOOSTS TO SURGE" if str(card.boosts_to)!="" else "")
+	_text(box,form_line,Rect2(363,92,430,24),12,GOLD,MEDIUM)
+	var color_line: String = "COLOR TYPE: "+str(card.color).to_upper()
+	if card.kind == "Fighter": color_line += "   •   %d HP" % int(card.hp)
+	_text(box,color_line,Rect2(364,120,418,24),12,DB.color_for(str(card.color)))
+	var y := 154
 	if str(card.get("ability_id",""))!="":
-		_text(box,str(card.ability_name).to_upper()+"  •  ONCE PER TURN",Rect2(364,193,410,24),13,GOLD,MEDIUM)
-		_text(box,str(card.ability_text),Rect2(364,222,410,61),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		var passive: bool = str(card.get("ability_kind",""))=="passive"
+		_text(box,str(card.ability_name).to_upper()+"  •  "+("PASSIVE" if passive else "ONCE PER TURN"),Rect2(364,y,410,22),13,GOLD,MEDIUM)
+		_text(box,str(card.ability_text),Rect2(364,y+24,420,58),13,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		y += 88
 	else:
-		_text(box,str(card.text),Rect2(364,193,410,92),16,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_text(box,str(card.text),Rect2(364,y,420,60),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		y += 62
 	if card.kind == "Fighter":
 		for i in range(card.attacks.size()):
 			var a: Dictionary = card.attacks[i]
-			_text(box,str(a.name),Rect2(364,292+i*80,404,30),19,CREAM)
-			var attack_info := "%d damage  •  %d energy (1 matching Color)" % [a.damage,a.cost]
-			if str(a.get("status",""))!="": attack_info += "  •  "+str(a.status).to_upper()
-			_text(box,attack_info,Rect2(364,326+i*80,407,24),12,GOLD)
-	var artwork: bool = _art_for(id)
-	_button(box,"FULL ART" if artwork else "BASIC ART",Rect2(363,487,198,44),func(): art_choices[id]=not artwork; _save(); _close_modal(); _card_detail(id),artwork,12)
-	_text(box,"Alternate illustration" if card.alternate and artwork else "Artwork layout preference",Rect2(363,540,414,25),12,MUTED)
+			_text(box,"%s   %d" % [a.name,int(a.damage)],Rect2(364,y,420,26),17,CREAM)
+			var attack_info := _cost_text(str(card.color),a)
+			if str(a.get("status",""))!="": attack_info += "  •  INFLICTS "+str(a.status).to_upper()
+			_text(box,attack_info,Rect2(364,y+26,420,20),12,GOLD)
+			if str(a.get("text",""))!="":
+				_text(box,str(a.text),Rect2(364,y+46,420,36),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+				y += 84
+			else:
+				y += 56
+	if str(card.get("boosts_to",""))!="":
+		var surge_id: String = str(card.boosts_to)
+		_button(box,"VIEW SURGE FORM  →",Rect2(363,532,219,40),func(): _card_detail(surge_id),false,11)
+	elif str(card.get("boost_from",""))!="":
+		var normal_id: String = str(card.boost_from)
+		_button(box,"←  VIEW NORMAL FORM",Rect2(363,532,219,40),func(): _card_detail(normal_id),false,11)
 	_button(box,"+ ADD TO DECK",Rect2(363,592,219,43),func(): _close_modal(); _add_to_deck(id),true,12)
 	_button(box,"CLOSE",Rect2(600,592,180,43),_close_modal,false,12)
 
 func _new_side(ids: Array) -> Dictionary:
 	var pile: Array = []
-	for id in ids:
-		var unit: Dictionary = cards_by_id[str(id)].duplicate(true)
-		unit["current_hp"] = unit.hp
-		unit["energy"] = []
-		unit["statuses"] = []
-		unit["ability_used"] = false
-		unit["boost"] = 0
-		unit["shield"] = 0
-		pile.append(unit)
+	for id in ids: pile.append(_make_unit(str(id)))
 	pile.shuffle()
-	# Guarantee a legal fighter in the initial hand without rerolling the deck.
-	var first_fighter := 0
-	while first_fighter < pile.size() and pile[first_fighter].kind != "Fighter": first_fighter += 1
-	if first_fighter < pile.size():
-		var opening: Dictionary = pile[first_fighter]
-		pile.remove_at(first_fighter)
+	# Guarantee a playable basic fighter (Normal or standalone SURGE) in the opening hand.
+	var first_basic := 0
+	while first_basic < pile.size() and not DB.is_basic(pile[first_basic]): first_basic += 1
+	if first_basic < pile.size():
+		var opening: Dictionary = pile[first_basic]
+		pile.remove_at(first_basic)
 		pile.push_front(opening)
 	var hand: Array = []
 	for i in range(mini(5,pile.size())): hand.append(pile.pop_front())
 	var active: Dictionary = {}
 	for i in range(hand.size()):
-		if hand[i].kind == "Fighter":
+		if DB.is_basic(hand[i]):
 			active = hand[i]
 			hand.remove_at(i)
 			break
@@ -351,6 +370,8 @@ func _start_battle() -> void:
 	selected_board = -1
 	ability_targeting = false
 	ability_source = -2
+	attack_targeting = -1
+	pending_boost_flash = ""
 	battle_log = ["Duel begins. First to 3 knockout points wins."]
 	screen_name = "battle"
 	notice = "Select a fighter, attach Color Energy, then attack."
@@ -369,6 +390,9 @@ func _begin_turn(side_index: int) -> void:
 	side.energy_color = types[rng.randi_range(0,types.size()-1)] if not types.is_empty() else "White"
 	_apply_turn_start_statuses(side_index)
 	if battle_over: return
+	if not side.active.is_empty() and str(side.active.get("ability_id",""))=="kagura_dance":
+		side.active.energy.append("Red")
+		_log(str(side.active.short)+" uses Kagura Dance: +1 Red Energy.")
 	_draw_cards(side_index,1)
 	_log("You draw a card." if side_index == 0 else "Opponent draws a card.")
 
@@ -388,7 +412,9 @@ func _apply_turn_start_statuses(side_index: int) -> void:
 		else:
 			_log(str(side.active.name)+" flips tails and remains asleep.")
 	if statuses.has("Poison"):
-		_apply_status_tick(side_index,"Poison",10)
+		var bonus: int = _poison_bonus(side_index)
+		if bonus > 0: _log("Butterfly Support: Poison deals +%d damage." % bonus)
+		_apply_status_tick(side_index,"Poison",10+bonus)
 		if side.active.is_empty() or str(side.active.id)!=active_id: return
 	if statuses.has("Burn"):
 		_apply_status_tick(side_index,"Burn",20)
@@ -437,13 +463,15 @@ func _battle() -> void:
 			else:
 				_panel(root_ui,rect,Color(0.04,0.07,0.12,0.6),Color("#344056"),8)
 				_text(root_ui,"+\nBENCH "+str(i+1),Rect2(rect.position+Vector2(8,55),rect.size-Vector2(16,65)),13,Color("#59677d"),MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
-		var info_y := 345 if side_index==1 else 674
-		_text(root_ui,"DECK %d   •   HAND %d   •   DISCARD %d" % [side.deck.size(),side.hand.size(),side.discard.size()],Rect2(662,info_y,391,24),11,MUTED)
 	_panel(root_ui,Rect2(151,150,223,528),Color(0.035,0.06,0.10,0.88),Color("#28364c"),9)
 	_text(root_ui,"DUEL RECORD",Rect2(169,171,187,29),16,CREAM,DISPLAY)
 	_text(root_ui,"YOU   %d / 3\nRIVAL %d / 3" % [me.points,enemy.points],Rect2(169,216,190,64),19,GOLD,MEDIUM)
-	_text(root_ui,"TURN %02d" % turn_number,Rect2(169,297,190,26),12,MUTED)
-	_text(root_ui,"\n\n".join(battle_log.slice(maxi(0,battle_log.size()-6))),Rect2(169,343,187,304),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	_text(root_ui,"TURN %02d" % turn_number,Rect2(169,290,190,22),12,MUTED)
+	for side_index in range(2):
+		var side: Dictionary = sides[side_index]
+		_text(root_ui,("YOU" if side_index==0 else "RIVAL")+"  DECK %d • HAND %d • DISCARD %d" % [side.deck.size(),side.hand.size(),side.discard.size()],Rect2(169,314+side_index*17,195,16),9,CREAM if side_index==0 else RED,MEDIUM)
+	_panel(root_ui,Rect2(169,355,187,1),Color("#28364c"),Color.TRANSPARENT,0)
+	_text(root_ui,"\n\n".join(battle_log.slice(maxi(0,battle_log.size()-5))),Rect2(169,366,187,290),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	for i in range(mini(5,enemy.hand.size())):
 		_image(root_ui,"res://assets/interface/card_back.png",Rect2(924+i*20,110,27,40))
 	_text(root_ui,"YOUR HAND  /  click a card to play",Rect2(154,711,900,24),11,GOLD)
@@ -452,31 +480,31 @@ func _battle() -> void:
 	for i in range(hand.size()):
 		var rect := Rect2(155+i*(width+7),742,width,128)
 		var node := _card(root_ui,hand[i],rect,func():
-			if _can_act(0): selected_hand=i; selected_board=-1; _render(),true)
+			if _can_act(0): selected_hand=i; selected_board=-1; attack_targeting=-1; ability_targeting=false; _render(),true)
 		if selected_hand==i: node.modulate=Color(1.15,1.12,0.9)
 	_battle_actions()
 	if battle_over: _result_modal()
 
 func _board_card(side_index: int, index: int, unit: Dictionary, rect: Rect2) -> void:
 	if unit.is_empty(): return
-	var node := _card(root_ui,unit,rect,func():
-		if side_index==0 and _can_act(0):
-			if ability_targeting:
-				if index >= 0: _choose_ability_target(index)
-				return
-			selected_board=index
-			selected_hand=-1
-			_render(),true)
-	board_nodes[str(side_index)+"_"+str(index)] = node
-	if side_index==0 and selected_hand==-1 and selected_board==index: node.modulate=Color(1.08,1.06,0.91)
-	if side_index==0 and ability_targeting and index>=0: node.modulate=Color(1.18,1.1,0.78)
+	var node := _card(root_ui,unit,rect,func(): _board_clicked(side_index,index),true)
+	var key: String = str(side_index)+"_"+str(index)
+	board_nodes[key] = node
+	if side_index==0 and selected_hand==-1 and selected_board==index and not _targeting(): node.modulate=Color(1.08,1.06,0.91)
+	if _is_target_option(side_index,index): node.modulate=Color(1.28,1.12,0.72)
+	elif _targeting() and side_index==1: node.modulate=Color(0.62,0.62,0.68)
+	if key == pending_boost_flash:
+		pending_boost_flash = ""
+		node.modulate = Color(2.0,1.7,0.9)
+		var flash := create_tween()
+		flash.tween_property(node,"modulate",Color.WHITE,0.18 if reduced_motion else 0.7)
 	var status_text := _status_summary(unit)
 	if status_text!="":
 		var status_color: Color = Color("#f1b36c") if status_text.contains("BURN") else (Color("#a6d7b5") if status_text.contains("POISON") else Color("#c0b2ec"))
 		_panel(root_ui,Rect2(rect.position.x+5,rect.position.y+49,rect.size.x-10,19),Color("#172235"),Color("#526177"),4)
 		_text(root_ui,status_text,Rect2(rect.position.x+7,rect.position.y+50,rect.size.x-14,17),8,status_color,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
-	var energy: Array = unit.energy
-	var hp_text: String = "%d / %d HP" % [unit.current_hp,unit.hp]
+	var energy: Array = unit.get("energy",[])
+	var hp_text: String = "%d / %d HP" % [int(unit.get("current_hp",unit.hp)),unit.hp]
 	_text(root_ui,hp_text,Rect2(rect.position.x,rect.end.y+4,rect.size.x,20),11,RED if unit.current_hp < unit.hp*0.4 else CREAM,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
 	for j in range(mini(7,energy.size())):
 		_panel(root_ui,Rect2(rect.position.x+6+j*16,rect.end.y+27,11,11),DB.color_for(str(energy[j])),Color.TRANSPARENT,5)
@@ -502,19 +530,33 @@ func _battle_actions() -> void:
 	if selected_board >= me.bench.size(): selected_board = -1
 	_text(root_ui,"YOUR TURN" if current_side==0 else "RIVAL'S TURN",Rect2(1131,157,248,30),20,GOLD if current_side==0 else RED,DISPLAY)
 	_text(root_ui,"Resolving…" if busy else "Plan your next move.",Rect2(1132,195,250,24),12,MUTED)
-	if selected_hand>=0 and selected_hand<me.hand.size():
+	if attack_targeting >= 0 and not me.active.is_empty():
+		var a: Dictionary = me.active.attacks[attack_targeting]
+		_text(root_ui,str(a.name),Rect2(1131,245,246,58),20,CREAM,DISPLAY)
+		_text(root_ui,"Choose any one of your opponent's fighters (active or bench) to take %d damage." % int(a.damage),Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_button(root_ui,"CANCEL",Rect2(1132,404,245,40),func(): attack_targeting=-1; _render(),false,11)
+	elif selected_hand>=0 and selected_hand<me.hand.size():
 		var card: Dictionary = me.hand[selected_hand]
 		_text(root_ui,card.name,Rect2(1131,245,246,58),20,CREAM,DISPLAY)
-		_text(root_ui,card.form,Rect2(1132,304,245,25),13,GOLD)
-		_text(root_ui,str(card.text),Rect2(1132,346,244,110),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
-		var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
-		var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
-		play.disabled = not _can_act(0) or (card.kind=="Support" and me.support_used) or (card.kind=="Fighter" and me.bench.size()>=3)
-		_button(root_ui,"← ACTIVE FIGHTER",Rect2(1132,536,245,38),func(): selected_hand=-1; selected_board=-1; _render(),false,11)
-	else:
+		_text(root_ui,card.form if card.kind!="Fighter" else ("SURGE" if card.surge else "NORMAL")+"  •  %d HP" % int(card.hp),Rect2(1132,304,245,25),13,GOLD)
+		_text(root_ui,str(card.text),Rect2(1132,336,244,110),13,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		if card.kind=="Fighter" and not DB.is_basic(card):
+			var targets: Array = _boost_targets(0,selected_hand)
+			if targets.is_empty():
+				_text(root_ui,"No matching Normal card in play to Boost.",Rect2(1132,474,245,40),12,RED,MEDIUM,HORIZONTAL_ALIGNMENT_LEFT,true)
+			for j in range(targets.size()):
+				var target_index: int = targets[j]
+				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1)),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),true,12)
+				boost_button.disabled = not _can_act(0)
+		else:
+			var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
+			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
+			play.disabled = not _can_act(0) or (card.kind=="Support" and me.support_used) or (card.kind=="Fighter" and me.bench.size()>=3)
+		_button(root_ui,"← ACTIVE FIGHTER",Rect2(1132,664,245,38),func(): selected_hand=-1; selected_board=-1; _render(),false,11)
+	elif not me.active.is_empty():
 		var unit: Dictionary = me.active if selected_board<0 else me.bench[selected_board]
-		_text(root_ui,unit.name,Rect2(1131,245,246,58),21,CREAM,DISPLAY)
-		_text(root_ui,"ACTIVE" if selected_board<0 else "BENCH "+str(selected_board+1),Rect2(1132,309,244,24),11,MUTED)
+		_text(root_ui,unit.name,Rect2(1131,245,246,58),19,CREAM,DISPLAY)
+		_text(root_ui,("ACTIVE" if selected_board<0 else "BENCH "+str(selected_board+1))+"  •  "+("SURGE" if unit.surge else "NORMAL"),Rect2(1132,309,244,24),11,MUTED)
 		var status_text := _status_summary(unit)
 		_text(root_ui,"STATUS: "+(status_text if status_text!="" else "NONE"),Rect2(1132,333,245,18),9,_status_color(str(unit.statuses[0])) if not unit.get("statuses",[]).is_empty() else MUTED,MEDIUM)
 		_text(root_ui,"COLOR ENERGY",Rect2(1131,354,248,24),11,GOLD)
@@ -526,29 +568,30 @@ func _battle_actions() -> void:
 		var action_y := 493
 		if str(unit.get("ability_id","")) != "":
 			action_y = 558
-			_text(root_ui,str(unit.ability_name).to_upper()+"  •  ONCE PER TURN",Rect2(1132,472,246,18),10,GOLD,MEDIUM)
-			if ability_targeting:
-				_text(root_ui,"Choose a benched fighter to receive "+str(me.energy_color)+" Color Energy.",Rect2(1132,492,246,33),11,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+			var passive: bool = str(unit.get("ability_kind",""))=="passive"
+			_text(root_ui,str(unit.ability_name).to_upper()+"  •  "+("PASSIVE" if passive else "ONCE PER TURN"),Rect2(1132,470,246,18),10,GOLD,MEDIUM)
+			if passive:
+				_text(root_ui,str(unit.ability_text),Rect2(1132,490,246,64),10,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+			elif ability_targeting:
+				_text(root_ui,"Choose a damaged benched fighter on your opponent's side.",Rect2(1132,490,246,33),11,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 				_button(root_ui,"CANCEL TARGET",Rect2(1132,524,245,30),func(): _cancel_ability_targeting(),false,10)
-				action_y = 559
 			else:
-				var ability_button := _button(root_ui,"ACTIVATE ABILITY",Rect2(1132,493,245,43),func(): _begin_ability_targeting(0,selected_board),true,11)
-				ability_button.disabled = not _can_act(0) or not _ability_ready(0,selected_board) or me.bench.is_empty()
-				if not ability_targeting:
-					var ability_status := "USED THIS TURN" if bool(unit.get("ability_used",false)) else ("Choose a benched fighter" if not me.bench.is_empty() else "Needs a benched fighter")
-					_text(root_ui,ability_status,Rect2(1132,538,245,17),10,MUTED)
+				var options: Array = _ability_target_options(0,selected_board)
+				var ability_button := _button(root_ui,"ACTIVATE ABILITY",Rect2(1132,491,245,43),func(): _begin_ability_targeting(0,selected_board),true,11)
+				ability_button.disabled = not _can_act(0) or not _ability_ready(0,selected_board) or options.is_empty()
+				var ability_status := "USED THIS TURN" if bool(unit.get("ability_used",false)) else ("Choose a target" if not options.is_empty() else "No damaged benched target")
+				_text(root_ui,ability_status,Rect2(1132,537,245,17),10,MUTED)
 		if selected_board<0:
 			for i in range(unit.attacks.size()):
 				var a: Dictionary = unit.attacks[i]
 				var status_tag: String = ("  •  "+str(a.status).to_upper()) if str(a.get("status",""))!="" else ""
-				var attack_button := _button(root_ui,"%s   %d\n%d ENERGY%s  •  ENDS TURN" % [a.name,a.damage,a.cost,status_tag],Rect2(1131,action_y+i*58,246,52),func(): _player_attack(i),_attack_legal(0,i),9)
+				var attack_button := _button(root_ui,"%s   %d\n%s%s" % [a.name,a.damage,_cost_text(str(unit.color),a),status_tag],Rect2(1131,action_y+i*58,246,52),func(): _player_attack(i),_attack_legal(0,i),9)
 				attack_button.disabled=not _can_act(0) or not _attack_legal(0,i) or ability_targeting
 		else:
 			var retreat := _button(root_ui,"SWITCH TO ACTIVE\nCOST: 1 ACTIVE ENERGY",Rect2(1131,action_y+12,246,60),func():
 				if _retreat(0,selected_board): selected_board=-1; _render(),false,11)
 			retreat.disabled=not _can_act(0) or me.retreated or me.active.energy.is_empty() or ability_targeting or me.active.get("statuses",[]).has("Sleep")
-		var rule_y := 654 if str(unit.get("ability_id","")) == "" else 673
-		_text(root_ui,"At least one attached Energy must\nmatch the fighter's Color Type.",Rect2(1132,rule_y,245,46),10,MUTED)
+		_text(root_ui,"Attacking ends your turn. Costs list\nthe Energy that must match the Color.",Rect2(1132,678,245,46),10,MUTED)
 	var end := _button(root_ui,"END TURN   →",Rect2(1130,734,247,49),func(): _end_turn_requested(),true,14)
 	end.disabled=not _can_act(0)
 	_button(root_ui,"PAUSE / LEAVE",Rect2(1130,798,247,33),_pause_menu,false,10)
@@ -561,11 +604,12 @@ func _ability_ready(side_index: int, unit_index: int) -> bool:
 	var side: Dictionary = sides[side_index]
 	if unit_index < -1 or unit_index >= side.bench.size(): return false
 	var unit: Dictionary = side.active if unit_index<0 else side.bench[unit_index]
-	return str(unit.get("ability_id",""))!="" and not bool(unit.get("ability_used",false))
+	if unit.is_empty(): return false
+	return str(unit.get("ability_id",""))!="" and str(unit.get("ability_kind",""))=="active" and not bool(unit.get("ability_used",false))
 
 func _begin_ability_targeting(side_index: int, source_index: int) -> void:
 	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return
-	if sides[side_index].bench.is_empty(): return
+	if _ability_target_options(side_index,source_index).is_empty(): return
 	ability_targeting = true
 	ability_source = source_index
 	_render()
@@ -580,22 +624,28 @@ func _choose_ability_target(target_index: int) -> bool:
 	if not _activate_ability(0,ability_source,target_index): return false
 	ability_targeting = false
 	ability_source = -2
-	selected_board = target_index
 	selected_hand = -1
 	_render()
 	return true
 
 func _activate_ability(side_index: int, source_index: int, target_index: int) -> bool:
 	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return false
+	if not _ability_target_options(side_index,source_index).has(target_index): return false
 	var side: Dictionary = sides[side_index]
-	if target_index<0 or target_index>=side.bench.size(): return false
 	var source: Dictionary = side.active if source_index<0 else side.bench[source_index]
-	var target: Dictionary = side.bench[target_index]
 	match str(source.get("ability_id","")):
-		"blood_dominion":
-			target.energy.append(str(side.energy_color))
+		"rapid_drumming":
+			var opponent: Dictionary = sides[1-side_index]
+			var pulled: Dictionary = opponent.bench[target_index]
+			var previous: Dictionary = opponent.active
+			if previous.is_empty():
+				opponent.bench.remove_at(target_index)
+			else:
+				_clear_statuses(previous)
+				opponent.bench[target_index] = previous
+			opponent.active = pulled
 			source["ability_used"] = true
-			_log("%s uses Blood Dominion: %s Color Energy flows to %s." % [source.name,side.energy_color,target.name])
+			_log("%s uses Rapid Drumming: %s is forced into the active spot." % [source.short,pulled.name])
 			return true
 	return false
 
@@ -616,6 +666,8 @@ func _play_card(side_index: int, index: int) -> bool:
 	if index<0 or index>=side.hand.size(): return false
 	var card: Dictionary = side.hand[index]
 	if card.kind=="Fighter":
+		# SURGE cards with a Normal counterpart can only enter play by Boosting.
+		if not DB.is_basic(card): return false
 		if side.bench.size()>=3: return false
 		side.hand.remove_at(index)
 		side.bench.append(card)
@@ -680,7 +732,8 @@ func _attack_legal(side_index: int, attack_index: int) -> bool:
 	if unit.is_empty() or attack_index<0 or attack_index>=unit.attacks.size(): return false
 	if unit.get("statuses",[]).has("Sleep"): return false
 	var attack: Dictionary = unit.attacks[attack_index]
-	return unit.energy.size()>=int(attack.cost) and unit.energy.has(unit.color)
+	var matching: int = unit.energy.count(unit.color)
+	return unit.energy.size()>=int(attack.cost) and matching>=int(attack.get("color_cost",1))
 
 func _attack_coin_allows(side_index: int) -> bool:
 	var attacker: Dictionary = sides[side_index].active
@@ -690,24 +743,38 @@ func _attack_coin_allows(side_index: int) -> bool:
 	if not heads: _log("The attack misses: 0 damage and no move effect.")
 	return heads
 
-func _resolve_attack(side_index: int, attack_index: int, attack_hits: bool = true) -> int:
+func _resolve_attack(side_index: int, attack_index: int, attack_hits: bool = true, target_index: int = -1) -> int:
 	if not _attack_legal(side_index,attack_index) or battle_over: return 0
 	var attacker: Dictionary = sides[side_index].active
-	var target: Dictionary = sides[1-side_index].active
+	var opponent: Dictionary = sides[1-side_index]
 	if not attack_hits: return 0
 	var attack: Dictionary = attacker.attacks[attack_index]
-	var damage: int = int(attack.damage)+int(attacker.boost)
-	if attack.effect != "pierce": damage=maxi(0,damage-int(target.shield))
-	attacker.boost=0
-	target.shield=0
-	target.current_hp=maxi(0,int(target.current_hp)-damage)
-	match str(attack.effect):
+	var effect: String = str(attack.effect)
+	var target: Dictionary = opponent.active
+	if effect=="snipe" and target_index>=0 and target_index<opponent.bench.size(): target = opponent.bench[target_index]
+	var damage: int = int(attack.damage)
+	if damage > 0:
+		damage += int(attacker.boost)
+		if effect != "pierce": damage=maxi(0,damage-int(target.shield))
+		attacker.boost=0
+		target.shield=0
+		target.current_hp=maxi(0,int(target.current_hp)-damage)
+	match effect:
 		"heal": attacker.current_hp=mini(attacker.hp,attacker.current_hp+10)
 		"shield": attacker.shield=10
 		"boost": attacker.boost=10
+		"draw":
+			_draw_cards(side_index,1)
+			_log(str(attacker.short)+" cheers: draw 1 card.")
+		"bench_splash":
+			for unit in opponent.bench: unit.current_hp=maxi(0,int(unit.current_hp)-20)
+			if not opponent.bench.is_empty(): _log("The blast hits the bench for 20 damage each.")
+		"discard_all_energy":
+			attacker.energy.clear()
+			_log(str(attacker.short)+" spends all of its Energy.")
 	var inflicted_status: String = str(attack.get("status",""))
-	if inflicted_status!="" and damage>0: _apply_status(target,inflicted_status,str(attacker.name))
-	_log("%s: %s — %d damage." % [attacker.name,attack.name,damage])
+	if inflicted_status!="" and damage>0 and target == opponent.active: _apply_status(target,inflicted_status,str(attacker.name))
+	_log("%s: %s — %d damage to %s." % [attacker.short,attack.name,damage,target.short])
 	return damage
 
 func _apply_status(target: Dictionary, status: String, source_name: String) -> void:
@@ -721,20 +788,20 @@ func _apply_status(target: Dictionary, status: String, source_name: String) -> v
 
 func _knockout_check(defender: int) -> void:
 	var side: Dictionary = sides[defender]
-	if side.active.is_empty() or side.active.current_hp>0: return
-	var points: int = 2 if side.active.surge else 1
-	sides[1-defender].points+=points
-	_log(str(side.active.name)+" is defeated. +"+str(points)+" points.")
-	_clear_statuses(side.active)
-	side.discard.append(side.active)
-	side.active={}
-	if not side.bench.is_empty(): side.active=side.bench.pop_front()
-	elif not side.hand.is_empty():
-		for i in range(side.hand.size()):
-			if side.hand[i].kind=="Fighter":
-				side.active=side.hand[i]
-				side.hand.remove_at(i)
-				break
+	for i in range(side.bench.size()-1,-1,-1):
+		if int(side.bench[i].current_hp)<=0:
+			_defeat(defender,side.bench[i])
+			side.bench.remove_at(i)
+	if not side.active.is_empty() and int(side.active.current_hp)<=0:
+		_defeat(defender,side.active)
+		side.active={}
+		if not side.bench.is_empty(): side.active=side.bench.pop_front()
+		else:
+			for i in range(side.hand.size()):
+				if DB.is_basic(side.hand[i]):
+					side.active=side.hand[i]
+					side.hand.remove_at(i)
+					break
 	if sides[1-defender].points>=3 or side.active.is_empty():
 		_finish_battle(1-defender)
 
@@ -749,15 +816,22 @@ func _finish_battle(winner: int) -> void:
 
 func _player_attack(index: int) -> void:
 	if not _can_act(0) or not _attack_legal(0,index): return
+	if str(sides[0].active.attacks[index].effect)=="snipe":
+		attack_targeting = index
+		selected_hand = -1
+		_render()
+		return
 	_animated_attack(0,index)
 
-func _animated_attack(side_index: int, index: int) -> void:
+func _animated_attack(side_index: int, index: int, target_index: int = -1) -> void:
 	var attack_hits := _attack_coin_allows(side_index)
 	var token := generation
 	busy=true
 	attack_animations+=1
+	var opponent_side: int = 1-side_index
 	var source: Control = board_nodes.get(str(side_index)+"_-1")
-	var target: Control = board_nodes.get(str(1-side_index)+"_-1")
+	var target: Control = board_nodes.get(str(opponent_side)+"_"+str(target_index))
+	if not is_instance_valid(target): target = board_nodes.get(str(opponent_side)+"_-1")
 	var slash := AnimatedSprite2D.new()
 	slash.sprite_frames=ATTACK_SLASH_FRAMES
 	slash.animation=&"slash"
@@ -780,24 +854,20 @@ func _animated_attack(side_index: int, index: int) -> void:
 		await slash.animation_finished
 	if is_instance_valid(slash): slash.queue_free()
 	if generation!=token: return
-	var damage := _resolve_attack(side_index,index,attack_hits)
-	if damage>0 and is_instance_valid(target):
-		damage_animations+=1
-		var original := target.position
-		var shake := create_tween()
-		target.modulate=Color(1.5,0.6,0.55)
-		shake.tween_property(target,"position",original+Vector2(9,0),0.05)
-		shake.tween_property(target,"position",original-Vector2(9,0),0.05)
-		shake.tween_property(target,"position",original,0.08)
-		shake.parallel().tween_property(target,"modulate",Color.WHITE,0.18)
-		var hit := _text(root_ui,"−"+str(damage),Rect2(target.position.x-10,target.position.y+55,200,65),47,RED,DISPLAY,HORIZONTAL_ALIGNMENT_CENTER)
-		hit.z_index=30
-		var flight := create_tween().set_parallel()
-		flight.tween_property(hit,"position:y",hit.position.y-55,0.65)
-		flight.tween_property(hit,"modulate:a",0.0,0.75)
+	# Snapshot opponent HP so every fighter that took damage (target, bench splash) animates.
+	var opponent: Dictionary = sides[opponent_side]
+	var before := {"-1": int(opponent.active.get("current_hp",0))}
+	for i in range(opponent.bench.size()): before[str(i)] = int(opponent.bench[i].current_hp)
+	_resolve_attack(side_index,index,attack_hits,target_index)
+	var after := {"-1": int(opponent.active.get("current_hp",0))}
+	for i in range(opponent.bench.size()): after[str(i)] = int(opponent.bench[i].current_hp)
+	for key in before:
+		var lost: int = int(before[key])-int(after.get(key,before[key]))
+		var node: Control = board_nodes.get(str(opponent_side)+"_"+str(key))
+		if lost > 0 and is_instance_valid(node): _damage_feedback(node,lost)
 	await get_tree().create_timer(0.6 if not reduced_motion else 0.18).timeout
 	if generation!=token: return
-	_knockout_check(1-side_index)
+	_knockout_check(opponent_side)
 	if battle_over:
 		busy=false
 		_render()
@@ -816,6 +886,7 @@ func _finish_turn() -> void:
 	_log("Your turn ends." if current_side==0 else "Rival's turn ends.")
 	ability_targeting = false
 	ability_source = -2
+	attack_targeting = -1
 	current_side=1-current_side
 	turn_number+=1
 	selected_hand=-1
@@ -856,10 +927,15 @@ func _ai_turn(token: int) -> void:
 	await _wait_unpaused(token)
 	if token!=generation or battle_over: return
 	var side: Dictionary = sides[1]
-	# Play a reserve, any Items, and at most one Support.
+	# Bench basics, Boost into SURGE forms, then play Items and at most one Support.
 	for i in range(side.hand.size()-1,-1,-1):
-		if side.hand[i].kind=="Fighter" and side.bench.size()<3: _play_card(1,i)
+		if i < side.hand.size() and DB.is_basic(side.hand[i]) and side.bench.size()<3: _play_card(1,i)
 	for i in range(side.hand.size()-1,-1,-1):
+		if i >= side.hand.size(): continue
+		var targets: Array = _boost_targets(1,i)
+		if not targets.is_empty(): _boost(1,i,int(targets[0]))
+	for i in range(side.hand.size()-1,-1,-1):
+		if i >= side.hand.size(): continue
 		if side.hand[i].kind=="Item" or (side.hand[i].kind=="Support" and not side.support_used): _play_card(1,i)
 	_attach_energy(1,-1)
 	_ai_use_card_abilities(1)
@@ -870,20 +946,170 @@ func _ai_turn(token: int) -> void:
 	var attack_index := -1
 	for i in range(side.active.attacks.size()):
 		if _attack_legal(1,i): attack_index=i
-	if attack_index>=0: _animated_attack(1,attack_index)
+	if attack_index>=0:
+		var target_index := -1
+		if str(side.active.attacks[attack_index].effect)=="snipe": target_index = _ai_snipe_target(1)
+		_animated_attack(1,attack_index,target_index)
 	else:
 		busy=true
 		await _finish_turn()
 
 func _ai_use_card_abilities(side_index: int) -> void:
 	var side: Dictionary = sides[side_index]
-	if side.bench.is_empty(): return
+	var opponent: Dictionary = sides[1-side_index]
 	for source_index in range(-1,side.bench.size()):
 		if not _ability_ready(side_index,source_index): continue
-		var target_index := 0
-		for candidate in range(1,side.bench.size()):
-			if side.bench[candidate].energy.size()<side.bench[target_index].energy.size(): target_index=candidate
+		var options: Array = _ability_target_options(side_index,source_index)
+		if options.is_empty(): continue
+		var target_index: int = int(options[0])
+		for candidate in options:
+			if int(opponent.bench[candidate].current_hp) < int(opponent.bench[target_index].current_hp): target_index = int(candidate)
 		_activate_ability(side_index,source_index,target_index)
+
+func _cost_text(color: String, a: Dictionary) -> String:
+	var cost: int = int(a.cost)
+	var color_cost: int = int(a.get("color_cost",1))
+	if cost <= 0: return "NO ENERGY"
+	if color_cost >= cost: return "%d %s ENERGY" % [cost,color.to_upper()]
+	return "%d ENERGY (%d %s)" % [cost,color_cost,color.to_upper()]
+
+func _make_unit(id: String) -> Dictionary:
+	var unit: Dictionary = cards_by_id[id].duplicate(true)
+	unit["current_hp"] = unit.hp
+	unit["energy"] = []
+	unit["statuses"] = []
+	unit["ability_used"] = false
+	unit["boost"] = 0
+	unit["shield"] = 0
+	unit["boosted_from"] = {}
+	return unit
+
+# Aoi's Butterfly Support: while she is in play, Poison on her opponent's fighters deals 20 more.
+func _poison_bonus(victim_side: int) -> int:
+	var other: Dictionary = sides[1-victim_side]
+	var units: Array = other.bench.duplicate()
+	if not other.active.is_empty(): units.append(other.active)
+	for unit in units:
+		if str(unit.get("ability_id",""))=="butterfly_support": return 20
+	return 0
+
+func _targeting() -> bool:
+	return ability_targeting or attack_targeting >= 0
+
+func _is_target_option(side_index: int, index: int) -> bool:
+	if side_index != 1: return false
+	if attack_targeting >= 0: return _attack_target_options(0).has(index)
+	if ability_targeting: return _ability_target_options(0,ability_source).has(index)
+	return false
+
+func _board_clicked(side_index: int, index: int) -> void:
+	if not _can_act(0): return
+	if attack_targeting >= 0:
+		if _is_target_option(side_index,index):
+			var attack_index: int = attack_targeting
+			attack_targeting = -1
+			_animated_attack(0,attack_index,index)
+		return
+	if ability_targeting:
+		if _is_target_option(side_index,index): _choose_ability_target(index)
+		return
+	if side_index != 0: return
+	selected_board=index
+	selected_hand=-1
+	_render()
+
+func _ability_target_options(side_index: int, source_index: int) -> Array:
+	var result: Array = []
+	if sides.is_empty(): return result
+	var side: Dictionary = sides[side_index]
+	if source_index < -1 or source_index >= side.bench.size(): return result
+	var source: Dictionary = side.active if source_index<0 else side.bench[source_index]
+	match str(source.get("ability_id","")):
+		"rapid_drumming":
+			var opponent: Dictionary = sides[1-side_index]
+			for i in range(opponent.bench.size()):
+				if int(opponent.bench[i].current_hp) < int(opponent.bench[i].hp): result.append(i)
+	return result
+
+# Board positions holding the Normal card this hand SURGE card Boosts from (active first).
+func _boost_targets(side_index: int, hand_index: int) -> Array:
+	var result: Array = []
+	var side: Dictionary = sides[side_index]
+	if hand_index<0 or hand_index>=side.hand.size(): return result
+	var from_id: String = str(side.hand[hand_index].get("boost_from",""))
+	if from_id == "": return result
+	if not side.active.is_empty() and str(side.active.id)==from_id: result.append(-1)
+	for i in range(side.bench.size()):
+		if str(side.bench[i].id)==from_id: result.append(i)
+	return result
+
+func _boost(side_index: int, hand_index: int, target_index: int) -> bool:
+	if not _can_act(side_index): return false
+	if not _boost_targets(side_index,hand_index).has(target_index): return false
+	var side: Dictionary = sides[side_index]
+	var surge: Dictionary = side.hand[hand_index]
+	var base: Dictionary = side.active if target_index<0 else side.bench[target_index]
+	var damage_taken: int = int(base.hp)-int(base.current_hp)
+	surge["current_hp"] = maxi(1,int(surge.hp)-damage_taken)
+	surge["energy"] = base.energy
+	surge["boost"] = base.boost
+	surge["shield"] = base.shield
+	surge["statuses"] = []
+	surge["ability_used"] = false
+	surge["boosted_from"] = base
+	side.hand.remove_at(hand_index)
+	if target_index<0: side.active = surge
+	else: side.bench[target_index] = surge
+	boost_animations += 1
+	pending_boost_flash = str(side_index)+"_"+str(target_index)
+	_log("%s Boosts into %s SURGE!" % [base.name,surge.short])
+	return true
+
+func _player_boost(target_index: int) -> void:
+	if _boost(0,selected_hand,target_index):
+		selected_hand = -1
+		selected_board = target_index
+		_render()
+
+func _attack_target_options(side_index: int) -> Array:
+	var result: Array = [-1]
+	for i in range(sides[1-side_index].bench.size()): result.append(i)
+	return result
+
+func _defeat(defender: int, unit: Dictionary) -> void:
+	var points: int = 2 if unit.surge else 1
+	sides[1-defender].points+=points
+	_log(str(unit.name)+" is defeated. +"+str(points)+" points.")
+	_clear_statuses(unit)
+	var side: Dictionary = sides[defender]
+	side.discard.append(unit)
+	var base: Dictionary = unit.get("boosted_from",{})
+	if not base.is_empty(): side.discard.append(base)
+
+func _damage_feedback(target: Control, damage: int) -> void:
+	damage_animations+=1
+	var original := target.position
+	var shake := create_tween()
+	target.modulate=Color(1.5,0.6,0.55)
+	shake.tween_property(target,"position",original+Vector2(9,0),0.05)
+	shake.tween_property(target,"position",original-Vector2(9,0),0.05)
+	shake.tween_property(target,"position",original,0.08)
+	shake.parallel().tween_property(target,"modulate",Color.WHITE,0.18)
+	var hit := _text(root_ui,"−"+str(damage),Rect2(target.position.x+target.size.x*0.5-100,target.position.y+55,200,65),47 if target.size.x>120 else 34,RED,DISPLAY,HORIZONTAL_ALIGNMENT_CENTER)
+	hit.z_index=30
+	var flight := create_tween().set_parallel()
+	flight.tween_property(hit,"position:y",hit.position.y-55,0.65)
+	flight.tween_property(hit,"modulate:a",0.0,0.75)
+
+func _ai_snipe_target(side_index: int) -> int:
+	var opponent: Dictionary = sides[1-side_index]
+	var best := -1
+	var best_hp: int = int(opponent.active.get("current_hp",9999))
+	for i in range(opponent.bench.size()):
+		if int(opponent.bench[i].current_hp) < best_hp:
+			best_hp = int(opponent.bench[i].current_hp)
+			best = i
+	return best
 
 func _log(value: String) -> void:
 	battle_log.append(value)
@@ -900,11 +1126,11 @@ func _result_modal() -> void:
 	_button(box,"BACK TO HUB",Rect2(365,264,281,46),func(): _go("home"),false,14)
 
 func _rules() -> void:
-	var box := _modal_box(Rect2(379,124,835,666))
-	_text(box,"THE WAY OF THE BLADE",Rect2(35,35,765,47),29,CREAM,DISPLAY)
-	var rules := "Build exactly 20 cards, with at most two copies of any card. The 150-card collection has two fighter editions only: Normal and SURGE. Each player has one active fighter and exactly three bench spots.\n\nPlay fighters to your bench. You may use only one Support each turn, but you can use multiple Items. You draw one card and gain one Color Energy each turn; attach it once to a fighter. Attacks need the displayed total Energy, including one that matches the fighter's Color Type.\n\nFighter abilities can be activated once per turn. Muzan's Blood Dominion adds the current-color Energy to your chosen benched fighter. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn by paying one Energy.\n\nSTATUS EFFECTS\nSleep: At its controller's turn start, flip a coin. Heads wakes the fighter; tails leaves it asleep. A sleeping active cannot attack or retreat.\nPoison: At its controller's turn start, take 10 damage. It persists while active.\nBurn: Take 20 damage at turn start, then flip a coin; heads removes Burn, tails leaves it.\nParalysis: Flip before attacking. Heads hits; tails means 0 damage and no attack effect.\nRetreating clears Poison, Burn and Paralysis. Status-curing Items and Supports can clear statuses, and healing can restore HP. Statuses clear when a fighter is knocked out.\n\nA knockout scores 1 point, or 2 for SURGE. First to 3 points wins. Choose basic or full-art card layouts in card details."
-	_text(box,rules,Rect2(37,110,755,459),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
-	_button(box,"DRAW YOUR BLADE",Rect2(35,595,765,43),_close_modal,true,13)
+	var box := _modal_box(Rect2(379,94,835,726))
+	_text(box,"THE WAY OF THE BLADE",Rect2(35,30,765,47),29,CREAM,DISPLAY)
+	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one active fighter and exactly three bench spots. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. Standalone SURGE cards (with no Normal version) are played straight to the bench.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn by paying one Energy.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
+	_text(box,rules,Rect2(37,92,760,560),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	_button(box,"DRAW YOUR BLADE",Rect2(35,660,765,43),_close_modal,true,13)
 
 func _settings() -> void:
 	var box := _modal_box(Rect2(471,280,640,345))
@@ -944,7 +1170,7 @@ func _close_modal() -> void:
 	paused=false
 
 func _art_for(id: String) -> bool:
-	return bool(art_choices.get(id,full_art))
+	return bool(cards_by_id.get(id,{}).get("surge",false))
 
 func _card(parent: Control, card: Dictionary, rect: Rect2, action: Callable, small: bool = false) -> Control:
 	var face := FACE.new()
@@ -973,7 +1199,6 @@ func _text(parent: Control, value: String, rect: Rect2, font_size: int, tint: Co
 	var label := Label.new()
 	label.text=value
 	label.position=rect.position
-	label.size=rect.size
 	label.horizontal_alignment=alignment
 	label.add_theme_font_override("font",font)
 	label.add_theme_font_size_override("font_size",font_size)
@@ -981,7 +1206,10 @@ func _text(parent: Control, value: String, rect: Rect2, font_size: int, tint: Co
 	label.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if wrap: label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	else: label.clip_text=true
+	# A fixed minimum width makes wrapped text measure against its box, not its full line.
+	if wrap: label.custom_minimum_size=Vector2(rect.size.x,0)
 	parent.add_child(label)
+	label.size=rect.size
 	return label
 
 func _button(parent: Control, value: String, rect: Rect2, action: Callable, primary: bool = false, font_size: int = 14) -> Button:

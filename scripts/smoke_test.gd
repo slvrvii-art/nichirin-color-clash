@@ -17,6 +17,7 @@ func _unit(id: String) -> Dictionary:
 	u["ability_used"] = false
 	u["boost"] = 0
 	u["shield"] = 0
+	u["boosted_from"] = {}
 	return u
 
 func _run() -> void:
@@ -35,12 +36,18 @@ func _run() -> void:
 			fighters+=1
 			expect(card.form in ["Normal","SURGE"],"fighters are only Normal or SURGE")
 			expect(bool(card.surge)==(card.form=="SURGE"),"SURGE flag matches edition")
+			if not card.surge: expect(card.attacks.size()==1,"Normal fighters have one attack: "+str(card.id))
 			for a in card.attacks:
 				if str(a.get("status",""))!="": status_moves[str(a.status)]=true
 		elif card.kind=="Support": supports+=1
 		else: items+=1
-		if card.name=="Muzan Kibutsuji": expect(card.ability_id=="blood_dominion","Muzan carries Blood Dominion")
-	expect(fighters==48,"24 characters x Normal/SURGE = 48 fighters")
+		for removed in ["Muzan","Yoriichi","Kokushibo","Kanao","Gyomei","Doma","Sanemi","Obanai"]:
+			expect(not str(card.name).contains(removed),"removed character absent: "+removed)
+	expect(fighters==39,"16 Normal/SURGE pairs + 7 new fighters = 39")
+	expect(DB.find_card("tanjiro_normal").boosts_to=="tanjiro_surge" and DB.find_card("tanjiro_surge").boost_from=="tanjiro_normal","Boost links")
+	expect(DB.is_basic(DB.find_card("kyogai_surge")) and DB.is_basic(DB.find_card("tanjiro_hinokami_surge")),"standalone SURGE cards are basic")
+	expect(not DB.is_basic(DB.find_card("susamaru_surge")),"Susamaru SURGE requires Boost")
+	expect(DB.find_card("murata_normal").hp==50 and DB.find_card("kyogai_surge").hp==125 and DB.find_card("aoi_normal").hp==70 and DB.find_card("susamaru_normal").hp==90 and DB.find_card("yahaba_normal").hp==80 and DB.find_card("tanjiro_hinokami_surge").hp==140,"new fighter HP")
 	expect(supports>0 and items>0,"both Support and Item cards exist")
 	expect(ids.size()==catalog.size(),"all catalog IDs distinct")
 	for s in ["Sleep","Poison","Burn","Paralysis"]: expect(status_moves.has(s),s+" appears on at least one move")
@@ -66,15 +73,67 @@ func _run() -> void:
 	expect(game._attach_energy(0,-1),"attach Color Energy")
 	expect(not game._attach_energy(0,-1),"second attachment disallowed")
 
-	# Muzan ability
-	var original_active: Dictionary = me.active
-	me.active = _unit("muzan_normal")
-	me.bench = [_unit("giyu_normal")]
-	me.energy_color = "Purple"
-	game._begin_ability_targeting(0,-1)
-	expect(game._choose_ability_target(0),"Blood Dominion resolves on bench")
-	expect(me.bench[0].energy==["Purple"],"Blood Dominion adds current color")
-	expect(not game._activate_ability(0,-1,0),"ability once per turn")
+	# Boost: SURGE needs its Normal in play; keeps energy and damage
+	me.active = _unit("tanjiro_normal")
+	me.active.energy = ["Blue","Blue"]
+	me.active.current_hp = me.active.hp-30
+	me.bench = []
+	me.hand = [_unit("tanjiro_surge"),_unit("giyu_surge"),_unit("kyogai_surge")]
+	expect(not game._play_card(0,0),"SURGE with a Normal version cannot be benched directly")
+	expect(game._boost_targets(0,1).is_empty(),"no Boost target without matching Normal")
+	expect(game._boost(0,0,-1),"Boost Tanjiro into SURGE")
+	expect(me.active.id=="tanjiro_surge" and me.active.energy.size()==2 and me.active.current_hp==me.active.hp-30,"Boost keeps Energy and damage")
+	expect(game._play_card(0,1),"standalone SURGE Kyogai plays to bench")
+	# Kyogai Rapid Drumming pulls a damaged benched opponent fighter
+	foe.active = _unit("rengoku_normal")
+	foe.bench = [_unit("yahaba_normal"),_unit("susamaru_normal")]
+	foe.bench[1].current_hp = 50
+	expect(game._ability_target_options(0,0)==[1],"only damaged bench fighters are targets")
+	game._begin_ability_targeting(0,0)
+	expect(game._choose_ability_target(1),"Rapid Drumming resolves")
+	expect(foe.active.id=="susamaru_normal" and foe.bench[1].id=="rengoku_normal","damaged fighter moved to active")
+	expect(not game._activate_ability(0,0,1),"ability once per turn")
+	# Aoi Butterfly Support adds 20 to Poison on the opponent
+	foe.active.current_hp = 90
+	foe.active["statuses"] = ["Poison"]
+	me.bench.append(_unit("aoi_normal"))
+	game._apply_turn_start_statuses(1)
+	expect(foe.active.current_hp==60,"Poison + Butterfly Support deals 30")
+	foe.active["statuses"] = []
+	# Kagura Dance generates Red Energy at turn start while active
+	var original_active: Dictionary = _unit("tanjiro_normal")
+	me.active = _unit("tanjiro_hinokami_surge")
+	game._begin_turn(0)
+	expect(me.active.energy==["Red"],"Kagura Dance adds Red Energy")
+	me.active.energy = ["Red","Red","Red","Red"]
+	expect(game._attack_legal(0,1),"Clear Blue Sky legal with 4 Red")
+	foe.active.current_hp = 200
+	expect(game._resolve_attack(0,1)==125 and me.active.energy.is_empty(),"Clear Blue Sky deals 125 and removes all Energy")
+	# Murata Cheer draws 1 for free
+	me.active = _unit("murata_normal")
+	var hand_before: int = me.hand.size()
+	expect(game._attack_legal(0,0),"Cheer costs 0")
+	game._resolve_attack(0,0)
+	expect(me.hand.size()==hand_before+1,"Cheer draws a card")
+	# Susamaru snipe and bench splash
+	me.active = _unit("susamaru_normal")
+	me.active.energy = ["Red"]
+	foe.bench = [_unit("yahaba_normal")]
+	expect(game._resolve_attack(0,0,true,0)==40 and foe.bench[0].current_hp==40,"Piercing Kick hits chosen bench fighter")
+	me.active = _unit("susamaru_surge")
+	me.active.energy = ["Red","Red"]
+	expect(not game._attack_legal(0,1),"Sixfold Temari needs 3 Red")
+	me.active.energy = ["Red","Red","Red"]
+	foe.active = _unit("rengoku_surge")
+	game._resolve_attack(0,1)
+	expect(foe.bench[0].current_hp==20,"Sixfold Temari splashes 20 to bench")
+	foe.bench[0].current_hp = 0
+	var pts: int = me.points
+	game._knockout_check(1)
+	expect(foe.bench.is_empty() and me.points==pts+1,"bench knockout scores")
+	foe.bench = []
+	foe.points = 0
+	me.points = 0
 
 	# Items many, Support once
 	me.active = _unit("tanjiro_normal")
@@ -171,6 +230,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] 150 cards, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
+		print("[SMOKE_PASS] 150 cards, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
 		quit(0)
 	else: quit(1)

@@ -9,6 +9,14 @@
       "name": "Duel Table",
       "order": 30
     },
+    "fighters": {
+      "name": "Fighters",
+      "order": 70
+    },
+    "fonts": {
+      "name": "Fonts",
+      "order": 80
+    },
     "game-identity": {
       "name": "Game Identity",
       "order": 40
@@ -64,6 +72,14 @@
       "size": 1026258,
       "assetType": "image",
       "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/aoi.png": {
+      "path": "/manus-storage/game/sha256/de78ec6e6616643d234feaa449f946e65f013a6da3f8ff0b3f773264d4f12b60.png",
+      "sha256": "sha256:de78ec6e6616643d234feaa449f946e65f013a6da3f8ff0b3f773264d4f12b60",
+      "size": 772567,
+      "assetType": "image",
+      "groupId": "fighters",
       "used": false
     },
     "assets/fighters/daki.png": {
@@ -154,6 +170,14 @@
       "groupId": "character-cards",
       "used": false
     },
+    "assets/fighters/kyogai.png": {
+      "path": "/manus-storage/game/sha256/8b5f33c575d827b436d346ea0870e2c014b1d9f50aac9284fdf0a31724aeea49.png",
+      "sha256": "sha256:8b5f33c575d827b436d346ea0870e2c014b1d9f50aac9284fdf0a31724aeea49",
+      "size": 985864,
+      "assetType": "image",
+      "groupId": "fighters",
+      "used": false
+    },
     "assets/fighters/mitsuri.png": {
       "path": "/manus-storage/game/sha256/a7586d5bdf425b9e047165c20e8d00ecdf72f1a1ab181f79b86174e86053ba89.png",
       "sha256": "sha256:a7586d5bdf425b9e047165c20e8d00ecdf72f1a1ab181f79b86174e86053ba89",
@@ -168,6 +192,14 @@
       "size": 862632,
       "assetType": "image",
       "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/murata.png": {
+      "path": "/manus-storage/game/sha256/41e3fdc91ff70c1c3edf68eef110c4e5a53be31ca45cec4858ffd7b3b3c80c79.png",
+      "sha256": "sha256:41e3fdc91ff70c1c3edf68eef110c4e5a53be31ca45cec4858ffd7b3b3c80c79",
+      "size": 946030,
+      "assetType": "image",
+      "groupId": "fighters",
       "used": false
     },
     "assets/fighters/muzan.png": {
@@ -242,6 +274,22 @@
       "groupId": "character-cards",
       "used": false
     },
+    "assets/fighters/susamaru.png": {
+      "path": "/manus-storage/game/sha256/b9e348ff5acf256a2bab3bdb5554b7d4c57975ae058252e8b2df2c9282ddf487.png",
+      "sha256": "sha256:b9e348ff5acf256a2bab3bdb5554b7d4c57975ae058252e8b2df2c9282ddf487",
+      "size": 907349,
+      "assetType": "image",
+      "groupId": "fighters",
+      "used": false
+    },
+    "assets/fighters/susamaru_full.png": {
+      "path": "/manus-storage/game/sha256/1897875206cef61879bc4f9fbec744355bf5a8ab809aa0721ea1db72a020019e.png",
+      "sha256": "sha256:1897875206cef61879bc4f9fbec744355bf5a8ab809aa0721ea1db72a020019e",
+      "size": 1046544,
+      "assetType": "image",
+      "groupId": "fighters",
+      "used": false
+    },
     "assets/fighters/tanjiro.png": {
       "path": "/manus-storage/game/sha256/ffdaeaf740aa4678d684a3ab2e6851bd0c4b26234072a200d5a7652146a3dc90.png",
       "sha256": "sha256:ffdaeaf740aa4678d684a3ab2e6851bd0c4b26234072a200d5a7652146a3dc90",
@@ -258,12 +306,28 @@
       "groupId": "character-cards",
       "used": false
     },
+    "assets/fighters/tanjiro_hinokami.png": {
+      "path": "/manus-storage/game/sha256/e8b775def413bdae877d62596f04c5dd531b402801bc38d25ad90444f6076aae.png",
+      "sha256": "sha256:e8b775def413bdae877d62596f04c5dd531b402801bc38d25ad90444f6076aae",
+      "size": 1084012,
+      "assetType": "image",
+      "groupId": "fighters",
+      "used": false
+    },
     "assets/fighters/tengen.png": {
       "path": "/manus-storage/game/sha256/336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941.png",
       "sha256": "sha256:336b69ebbfc3af6268a1dff08ec05f09ef2cdfa6c4705152f8607ca5b273c941",
       "size": 918314,
       "assetType": "image",
       "groupId": "character-cards",
+      "used": false
+    },
+    "assets/fighters/yahaba.png": {
+      "path": "/manus-storage/game/sha256/0f1cc9ee66ea2ba5b5afb7df7b686a916e71b49f46ed16d362b79b829394b94d.png",
+      "sha256": "sha256:0f1cc9ee66ea2ba5b5afb7df7b686a916e71b49f46ed16d362b79b829394b94d",
+      "size": 725097,
+      "assetType": "image",
+      "groupId": "fighters",
       "used": false
     },
     "assets/fighters/yoriichi.png": {
@@ -289,6 +353,14 @@
       "assetType": "image",
       "groupId": "character-cards",
       "used": false
+    },
+    "assets/fonts/Bungee-Regular.ttf": {
+      "path": "/manus-storage/game/sha256/c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f.ttf",
+      "sha256": "sha256:c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f",
+      "size": 118996,
+      "assetType": "font",
+      "groupId": "fonts",
+      "used": true
     },
     "assets/interface/attack_slash_01.webp": {
       "path": "/manus-storage/game/sha256/4ae461943e2e8c6366b980f3b8df1a0be221ef9f4b9c06bd8ab76a7ddc495dad.webp",
