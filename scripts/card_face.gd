@@ -58,7 +58,9 @@ func setup(card: Dictionary, artwork: bool, dimensions: Vector2, small: bool = f
 	bottom.size = Vector2(w-8,h*0.35-4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bottom)
-	label_at(str(data.form).to_upper(),Vector2(10,h*0.66),Vector2(w-20,16*s),9*s,border)
+	var form_label: String = str(data.form).to_upper()
+	if str(data.get("ability_id",""))!="": form_label += "  •  ABILITY"
+	label_at(form_label,Vector2(10,h*0.66),Vector2(w-20,16*s),9*s,border)
 	if data.kind == "Fighter":
 		var attacks: Array = data.attacks
 		for i in range(attacks.size()):

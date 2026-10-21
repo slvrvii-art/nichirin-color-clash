@@ -46,6 +46,8 @@ var paused := false
 var generation := 0
 var selected_hand := -1
 var selected_board := -1
+var ability_targeting := false
+var ability_source := -2
 var battle_log: Array[String] = []
 var board_nodes := {}
 var rng := RandomNumberGenerator.new()
@@ -274,7 +276,11 @@ func _card_detail(id: String) -> void:
 	_text(box,card.name,Rect2(362,42,419,55),27,CREAM,DISPLAY)
 	_text(box,str(card.form)+"  /  "+str(card.rarity),Rect2(363,101,421,36),14,GOLD)
 	_text(box,"COLOR TYPE: "+str(card.color).to_upper(),Rect2(364,147,418,30),12,DB.color_for(str(card.color)))
-	_text(box,str(card.text),Rect2(364,193,410,92),16,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	if str(card.get("ability_id",""))!="":
+		_text(box,str(card.ability_name).to_upper()+"  •  ONCE PER TURN",Rect2(364,193,410,24),13,GOLD,MEDIUM)
+		_text(box,str(card.ability_text),Rect2(364,222,410,61),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	else:
+		_text(box,str(card.text),Rect2(364,193,410,92),16,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	if card.kind == "Fighter":
 		for i in range(card.attacks.size()):
 			var a: Dictionary = card.attacks[i]
@@ -292,6 +298,7 @@ func _new_side(ids: Array) -> Dictionary:
 		var unit: Dictionary = cards_by_id[str(id)].duplicate(true)
 		unit["current_hp"] = unit.hp
 		unit["energy"] = []
+		unit["ability_used"] = false
 		unit["boost"] = 0
 		unit["shield"] = 0
 		pile.append(unit)
@@ -333,6 +340,8 @@ func _start_battle() -> void:
 	battle_over = false
 	selected_hand = -1
 	selected_board = -1
+	ability_targeting = false
+	ability_source = -2
 	battle_log = ["Duel begins. First to 3 knockout points wins."]
 	screen_name = "battle"
 	notice = "Select a fighter, attach Color Energy, then attack."
@@ -345,6 +354,8 @@ func _begin_turn(side_index: int) -> void:
 	side.energy_ready = true
 	side.support_used = false
 	side.retreated = false
+	if not side.active.is_empty(): side.active["ability_used"] = false
+	for unit in side.bench: unit["ability_used"] = false
 	var types: Array = side.colors
 	side.energy_color = types[rng.randi_range(0,types.size()-1)] if not types.is_empty() else "White"
 	_draw_cards(side_index,1)
@@ -404,9 +415,16 @@ func _battle() -> void:
 func _board_card(side_index: int, index: int, unit: Dictionary, rect: Rect2) -> void:
 	if unit.is_empty(): return
 	var node := _card(root_ui,unit,rect,func():
-		if side_index==0 and _can_act(0): selected_board=index; selected_hand=-1; _render(),true)
+		if side_index==0 and _can_act(0):
+			if ability_targeting:
+				if index >= 0: _choose_ability_target(index)
+				return
+			selected_board=index
+			selected_hand=-1
+			_render(),true)
 	board_nodes[str(side_index)+"_"+str(index)] = node
 	if side_index==0 and selected_hand==-1 and selected_board==index: node.modulate=Color(1.08,1.06,0.91)
+	if side_index==0 and ability_targeting and index>=0: node.modulate=Color(1.18,1.1,0.78)
 	var energy: Array = unit.energy
 	var hp_text: String = "%d / %d HP" % [unit.current_hp,unit.hp]
 	_text(root_ui,hp_text,Rect2(rect.position.x,rect.end.y+4,rect.size.x,20),11,RED if unit.current_hp < unit.hp*0.4 else CREAM,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
@@ -416,6 +434,7 @@ func _board_card(side_index: int, index: int, unit: Dictionary, rect: Rect2) -> 
 func _battle_actions() -> void:
 	_panel(root_ui,Rect2(1110,139,290,710),PANEL,Color("#35415a"),10)
 	var me: Dictionary = sides[0]
+	if selected_board >= me.bench.size(): selected_board = -1
 	_text(root_ui,"YOUR TURN" if current_side==0 else "RIVAL'S TURN",Rect2(1131,157,248,30),20,GOLD if current_side==0 else RED,DISPLAY)
 	_text(root_ui,"Resolving…" if busy else "Plan your next move.",Rect2(1132,195,250,24),12,MUTED)
 	if selected_hand>=0 and selected_hand<me.hand.size():
@@ -434,24 +453,82 @@ func _battle_actions() -> void:
 		var attach := _button(root_ui,"ATTACH "+str(me.energy_color).to_upper()+"  +",Rect2(1131,388,246,45),func():
 			if _attach_energy(0,selected_board): _render(),false,12)
 		attach.add_theme_color_override("font_color",DB.color_for(str(me.energy_color)))
-		attach.disabled = not _can_act(0) or not me.energy_ready
+		attach.disabled = not _can_act(0) or not me.energy_ready or ability_targeting
 		_text(root_ui,"Once per turn • "+("available" if me.energy_ready else "attached"),Rect2(1132,440,245,23),11,MUTED)
+		var action_y := 493
+		if str(unit.get("ability_id","")) != "":
+			action_y = 558
+			_text(root_ui,str(unit.ability_name).to_upper()+"  •  ONCE PER TURN",Rect2(1132,472,246,18),10,GOLD,MEDIUM)
+			if ability_targeting:
+				_text(root_ui,"Choose a benched fighter to receive "+str(me.energy_color)+" Color Energy.",Rect2(1132,492,246,33),11,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+				_button(root_ui,"CANCEL TARGET",Rect2(1132,524,245,30),func(): _cancel_ability_targeting(),false,10)
+				action_y = 559
+			else:
+				var ability_button := _button(root_ui,"ACTIVATE ABILITY",Rect2(1132,493,245,43),func(): _begin_ability_targeting(0,selected_board),true,11)
+				ability_button.disabled = not _can_act(0) or not _ability_ready(0,selected_board) or me.bench.is_empty()
+				if not ability_targeting:
+					var ability_status := "USED THIS TURN" if bool(unit.get("ability_used",false)) else ("Choose a benched fighter" if not me.bench.is_empty() else "Needs a benched fighter")
+					_text(root_ui,ability_status,Rect2(1132,538,245,17),10,MUTED)
 		if selected_board<0:
 			for i in range(unit.attacks.size()):
 				var a: Dictionary = unit.attacks[i]
-				var attack_button := _button(root_ui,"%s   %d\n%d ENERGY   •   ENDS TURN" % [a.name,a.damage,a.cost],Rect2(1131,493+i*78,246,63),func(): _player_attack(i),_attack_legal(0,i),11)
-				attack_button.disabled=not _can_act(0) or not _attack_legal(0,i)
+				var attack_button := _button(root_ui,"%s   %d\n%d ENERGY   •   ENDS TURN" % [a.name,a.damage,a.cost],Rect2(1131,action_y+i*58,246,52),func(): _player_attack(i),_attack_legal(0,i),10)
+				attack_button.disabled=not _can_act(0) or not _attack_legal(0,i) or ability_targeting
 		else:
-			var retreat := _button(root_ui,"SWITCH TO ACTIVE\nCOST: 1 ACTIVE ENERGY",Rect2(1131,505,246,60),func():
+			var retreat := _button(root_ui,"SWITCH TO ACTIVE\nCOST: 1 ACTIVE ENERGY",Rect2(1131,action_y+12,246,60),func():
 				if _retreat(0,selected_board): selected_board=-1; _render(),false,11)
-			retreat.disabled=not _can_act(0) or me.retreated or me.active.energy.is_empty()
-		_text(root_ui,"At least one attached Energy must\nmatch the fighter's Color Type.",Rect2(1132,654,245,49),11,MUTED)
+			retreat.disabled=not _can_act(0) or me.retreated or me.active.energy.is_empty() or ability_targeting
+		var rule_y := 654 if str(unit.get("ability_id","")) == "" else 673
+		_text(root_ui,"At least one attached Energy must\nmatch the fighter's Color Type.",Rect2(1132,rule_y,245,46),10,MUTED)
 	var end := _button(root_ui,"END TURN   →",Rect2(1130,734,247,49),func(): _end_turn_requested(),true,14)
 	end.disabled=not _can_act(0)
 	_button(root_ui,"PAUSE / LEAVE",Rect2(1130,798,247,33),_pause_menu,false,10)
 
 func _can_act(side: int) -> bool:
 	return screen_name=="battle" and current_side==side and not busy and not battle_over and not paused
+
+func _ability_ready(side_index: int, unit_index: int) -> bool:
+	if side_index<0 or side_index>=sides.size(): return false
+	var side: Dictionary = sides[side_index]
+	if unit_index < -1 or unit_index >= side.bench.size(): return false
+	var unit: Dictionary = side.active if unit_index<0 else side.bench[unit_index]
+	return str(unit.get("ability_id",""))!="" and not bool(unit.get("ability_used",false))
+
+func _begin_ability_targeting(side_index: int, source_index: int) -> void:
+	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return
+	if sides[side_index].bench.is_empty(): return
+	ability_targeting = true
+	ability_source = source_index
+	_render()
+
+func _cancel_ability_targeting() -> void:
+	ability_targeting = false
+	ability_source = -2
+	_render()
+
+func _choose_ability_target(target_index: int) -> bool:
+	if not ability_targeting: return false
+	if not _activate_ability(0,ability_source,target_index): return false
+	ability_targeting = false
+	ability_source = -2
+	selected_board = target_index
+	selected_hand = -1
+	_render()
+	return true
+
+func _activate_ability(side_index: int, source_index: int, target_index: int) -> bool:
+	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return false
+	var side: Dictionary = sides[side_index]
+	if target_index<0 or target_index>=side.bench.size(): return false
+	var source: Dictionary = side.active if source_index<0 else side.bench[source_index]
+	var target: Dictionary = side.bench[target_index]
+	match str(source.get("ability_id","")):
+		"blood_dominion":
+			target.energy.append(str(side.energy_color))
+			source["ability_used"] = true
+			_log("%s uses Blood Dominion: %s Color Energy flows to %s." % [source.name,side.energy_color,target.name])
+			return true
+	return false
 
 func _attach_energy(side_index: int, target: int) -> bool:
 	if not _can_act(side_index): return false
@@ -616,6 +693,8 @@ func _end_turn_requested() -> void:
 func _finish_turn() -> void:
 	var token := generation
 	_log("Your turn ends." if current_side==0 else "Rival's turn ends.")
+	ability_targeting = false
+	ability_source = -2
 	current_side=1-current_side
 	turn_number+=1
 	selected_hand=-1
@@ -660,6 +739,7 @@ func _ai_turn(token: int) -> void:
 			_play_card(1,i)
 			break
 	_attach_energy(1,-1)
+	_ai_use_card_abilities(1)
 	_render()
 	await get_tree().create_timer(0.45).timeout
 	await _wait_unpaused(token)
@@ -671,6 +751,16 @@ func _ai_turn(token: int) -> void:
 	else:
 		busy=true
 		await _finish_turn()
+
+func _ai_use_card_abilities(side_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	if side.bench.is_empty(): return
+	for source_index in range(-1,side.bench.size()):
+		if not _ability_ready(side_index,source_index): continue
+		var target_index := 0
+		for candidate in range(1,side.bench.size()):
+			if side.bench[candidate].energy.size()<side.bench[target_index].energy.size(): target_index=candidate
+		_activate_ability(side_index,source_index,target_index)
 
 func _log(value: String) -> void:
 	battle_log.append(value)
@@ -689,7 +779,7 @@ func _result_modal() -> void:
 func _rules() -> void:
 	var box := _modal_box(Rect2(379,124,835,666))
 	_text(box,"THE WAY OF THE BLADE",Rect2(35,35,765,47),29,CREAM,DISPLAY)
-	var rules := "Build exactly 20 cards, with at most two copies of a catalog card. All 162 cards are available for deck building.\n\nEach player has one active fighter and exactly three bench spots. Click a card in your hand to place a fighter or use a Support. Only one Support may be used per turn.\n\nYou draw one card and gain one Color Energy each turn. Select your active or a bench fighter, then attach it once. An attack needs the displayed total Energy, including at least one matching its Color Type. Energy remains attached after attacking.\n\nOnly your active fighter can attack. Attacking automatically ends your turn; use End Turn to pass without attacking. Click a bench fighter to switch it with your active, once per turn, costing one Energy from the active.\n\nScore 1 point for a knockout, or 2 for a SURGE fighter. First to 3 points wins. If you cannot replace a defeated active fighter from your bench or hand, you lose. Artwork and rarity variants are collectible choices; full art is selectable in card details."
+	var rules := "Build exactly 20 cards, with at most two copies of a catalog card. All 162 cards are available for deck building.\n\nEach player has one active fighter and exactly three bench spots. Click a card in your hand to place a fighter or use a Support. Only one Support may be used per turn.\n\nYou draw one card and gain one Color Energy each turn. Select your active or a bench fighter, then attach it once. An attack needs the displayed total Energy, including at least one matching its Color Type. Energy remains attached after attacking.\n\nFighter abilities can be activated once per turn. Select the fighter with an ability, activate it, then choose a benched fighter. Muzan's Blood Dominion generates one current-color Color Energy on your chosen bench fighter; it does not use your regular Energy attachment.\n\nOnly your active fighter can attack. Attacking automatically ends your turn; use End Turn to pass without attacking. Click a bench fighter to switch it with your active, once per turn, costing one Energy from the active.\n\nScore 1 point for a knockout, or 2 for a SURGE fighter. First to 3 points wins. If you cannot replace a defeated active fighter from your bench or hand, you lose. Artwork and rarity variants are collectible choices; full art is selectable in card details."
 	_text(box,rules,Rect2(37,110,755,459),17,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	_button(box,"DRAW YOUR BLADE",Rect2(35,595,765,43),_close_modal,true,13)
 

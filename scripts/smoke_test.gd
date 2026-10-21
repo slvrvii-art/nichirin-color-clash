@@ -15,6 +15,8 @@ func _run() -> void:
 		ids[card.id]=true
 		expect(card.kind in ["Fighter","Support"],"renamed card categories")
 		expect(DB.COLORS.has(card.color),"valid Color Type")
+		if card.name=="Muzan Kibutsuji": expect(card.ability_id=="blood_dominion","every Muzan fighter form carries Blood Dominion")
+		elif card.kind=="Fighter": expect(str(card.get("ability_id",""))=="","Blood Dominion is limited to Muzan fighter cards")
 	expect(ids.size()==162,"all catalog IDs distinct")
 	expect(DB.validate_deck(DB.starter_deck())=="","valid 20-card starter")
 	var oversized := DB.starter_deck()
@@ -32,8 +34,33 @@ func _run() -> void:
 	expect(game._attach_energy(0,-1),"attach generated Color Energy")
 	expect(not game._attach_energy(0,-1),"second attachment disallowed")
 	expect(game._attack_legal(0,0),"matching Color Energy enables attack")
-	game._draw_cards(0,10)
 	var me: Dictionary = game.sides[0]
+	var original_active: Dictionary = me.active
+	var muz: Dictionary = DB.find_card("muzan_0")
+	muz["current_hp"] = muz.hp
+	muz["energy"] = []
+	muz["ability_used"] = false
+	var reserve: Dictionary = DB.find_card("giyu_0")
+	reserve["current_hp"] = reserve.hp
+	reserve["energy"] = []
+	reserve["ability_used"] = false
+	me.active = muz
+	me.bench = [reserve]
+	me.energy_color = "Purple"
+	expect(game._ability_ready(0,-1),"Muzan's ability is ready while he is active")
+	game._begin_ability_targeting(0,-1)
+	expect(game.ability_targeting,"Muzan ability prompts for a bench target")
+	expect(game._choose_ability_target(0),"Muzan ability resolves on the chosen bench fighter")
+	expect(me.bench[0].energy==["Purple"],"ability generates the player's current Color Energy on its target")
+	expect(bool(me.active.ability_used),"Muzan ability marks its source used for the turn")
+	expect(not me.energy_ready,"Muzan ability does not consume or restore the regular Energy attachment")
+	expect(not game._activate_ability(0,-1,0),"Muzan ability cannot activate twice in one turn")
+	game._begin_turn(0)
+	expect(game._ability_ready(0,-1),"Muzan ability refreshes on the controller's next turn")
+	expect(game._activate_ability(0,-1,0),"refreshed Muzan ability can be used again")
+	me.active = original_active
+	me.bench = []
+	game._draw_cards(0,10)
 	for i in range(me.hand.size()-1,-1,-1):
 		if me.hand[i].kind=="Fighter": game._play_card(0,i)
 	expect(me.bench.size()==3,"exactly three bench capacity")
@@ -70,6 +97,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] catalog, decks, active/bench, Color Energy, Support, damage, attack auto-end, manual end, pause and replay")
+		print("[SMOKE_PASS] catalog, decks, active/bench, Color Energy, Muzan ability target/use/refresh, Support, damage, attack auto-end, manual end, pause and replay")
 		quit(0)
 	else: quit(1)

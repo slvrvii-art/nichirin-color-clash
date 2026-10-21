@@ -115,9 +115,13 @@ static func catalog() -> Array[Dictionary]:
 			var base_damage: int = 20 + form * 5 + (i % 2) * 10
 			var color: String = "Red" if i == 0 and form >= 3 else str(f[2])
 			var effect: String = ["none","heal","shield","pierce","boost","none"][form]
+			var ability_id: String = "blood_dominion" if str(f[0])=="muzan" else ""
+			var ability_name: String = "Blood Dominion" if ability_id!="" else ""
+			var ability_text: String = "Once per turn, choose a benched fighter. Generate one Color Energy of your current Energy color on it." if ability_id!="" else ""
 			cards.append({"id":str(f[0])+"_"+str(form), "number":cards.size()+1, "name":str(f[1]),
 				"form":FORMS[form], "kind":"Fighter", "color":color, "hp":hp, "surge":surge,
 				"rarity":RARITIES[form], "art":str(f[0]), "alternate":str(f[0]) in ALT_ART,
+				"ability_id":ability_id, "ability_name":ability_name, "ability_text":ability_text,
 				"attacks":[{"name":str(f[3]),"damage":base_damage,"cost":1,"effect":"none"},
 				{"name":str(f[4]),"damage":base_damage+30+(20 if surge else 0),"cost":3 if surge else 2,"effect":effect}],
 				"text":"SURGE: awards 2 points when defeated." if surge else ["A blade drawn with courage.","Power attack restores 10 HP.","Power attack grants a 10-damage guard.","Power attack ignores guarding.","", "An unbreakable will."][form]})
