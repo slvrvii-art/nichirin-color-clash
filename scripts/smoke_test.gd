@@ -22,7 +22,7 @@ func _unit(id: String) -> Dictionary:
 
 func _run() -> void:
 	var catalog := DB.catalog()
-	expect(catalog.size()>=150,"at least 150 cards")
+	expect(catalog.size()==DB.TOTAL_CARDS and DB.TOTAL_CARDS==61,"61-card catalog")
 	var ids := {}
 	var fighters := 0
 	var supports := 0
@@ -48,7 +48,7 @@ func _run() -> void:
 	expect(DB.is_basic(DB.find_card("kyogai_surge")) and DB.is_basic(DB.find_card("tanjiro_hinokami_surge")),"standalone SURGE cards are basic")
 	expect(not DB.is_basic(DB.find_card("susamaru_surge")),"Susamaru SURGE requires Boost")
 	expect(DB.find_card("murata_normal").hp==50 and DB.find_card("kyogai_surge").hp==125 and DB.find_card("aoi_normal").hp==70 and DB.find_card("susamaru_normal").hp==90 and DB.find_card("yahaba_normal").hp==80 and DB.find_card("tanjiro_hinokami_surge").hp==140,"new fighter HP")
-	expect(supports>0 and items>0,"both Support and Item cards exist")
+	expect(supports==12 and items==10,"exactly 12 Support and 10 Item cards")
 	expect(ids.size()==catalog.size(),"all catalog IDs distinct")
 	for s in ["Sleep","Poison","Burn","Paralysis"]: expect(status_moves.has(s),s+" appears on at least one move")
 	expect(DB.migrate_card_id("tanjiro_4")=="tanjiro_surge" and DB.migrate_card_id("giyu_2")=="giyu_normal","old fighter IDs migrate")
@@ -187,6 +187,26 @@ func _run() -> void:
 	expect(not me.support_used,"Items do not use the Support limit")
 	expect(game._play_card(0,0),"first Support")
 	expect(not game._play_card(0,0),"second Support rejected")
+	# New utility effects
+	me.support_used = false
+	me.hand = [DB.find_card("support_7")]
+	expect(game._play_card(0,0) and me.hand.size()==5,"Kasugai Crow draws up to 5")
+	me.support_used = false
+	foe.active = _unit("rengoku_normal")
+	foe.active["statuses"] = ["Poison"]
+	foe.bench = [_unit("yahaba_normal")]
+	me.hand = [DB.find_card("support_10")]
+	expect(game._play_card(0,0) and foe.active.id=="yahaba_normal" and foe.bench[0].statuses.is_empty(),"Corps Intelligence forces an opponent switch")
+	me.support_used = false
+	me.retreated = false
+	me.active.energy = []
+	me.hand = [DB.find_card("support_18")]
+	expect(not game._can_retreat(0),"no Energy, no retreat")
+	expect(game._play_card(0,0) and game._can_retreat(0) and game._side_retreat_cost(0)==0,"Kakushi Retrieval makes retreat free")
+	me.free_retreat = false
+	me.bench[0].current_hp = 40
+	me.hand = [DB.find_card("item_02")]
+	expect(game._play_card(0,0) and me.bench[0].current_hp==60,"Kakushi Stretcher heals the bench")
 
 	# Sleep blocks attack and retreat; heads at turn start wakes
 	me.active = _unit("tanjiro_normal")
@@ -271,6 +291,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] 150 cards, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
+		print("[SMOKE_PASS] 61 cards (12 Support, 10 Item), new utility effects, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
 		quit(0)
 	else: quit(1)

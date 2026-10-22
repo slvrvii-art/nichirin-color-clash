@@ -27,3 +27,8 @@
 - [x] Opponent cards in play open a detail view (live HP, Energy, status); the duel pauses while it is open.
 - [x] Ability names shown on every card that has an ability.
 - [x] Full-art SURGE cards no longer have dark translucent bands; text uses an outline instead.
+
+## Utility cut
+- [x] Catalog reduced to 61 cards: 39 fighters, 12 Support, 10 Item; generated filler cards removed.
+- [x] Duplicate utility effects replaced with distinct ones (draw-to-5, forced opponent switch, free retreat, bench heal, cleanse+draw, boost+guard).
+- [x] Utility effect text wraps on large cards and trims on small cards.

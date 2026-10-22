@@ -128,37 +128,34 @@ const SPECIAL_FIGHTERS := [
 			{"name":"Clear Blue Sky","damage":125,"cost":4,"color_cost":4,"effect":"discard_all_energy"}]}
 ]
 
-# The first 18 utility cards retain their saved card IDs; several medicines are Items.
-const SUPPORTS := [
-	["Wisteria Medicine","cleanse_heal",30,"healing","Item"],
-	["Butterfly Mansion","team_heal_cleanse",20,"healing","Support"],
-	["Recovery Breathing","heal",20,"healing","Item"],
-	["Tamayo's Remedy","cleanse_heal",50,"healing","Item"],
-	["Aoi's Care","cleanse_heal",30,"healing","Item"],
-	["Wisteria Sanctuary","team_heal_cleanse",20,"healing","Support"],
-	["Urokodaki's Lesson","draw",2,"training","Support"],
-	["Kasugai Crow","draw",2,"training","Support"],
-	["Final Selection","draw",3,"training","Support"],
-	["Swordsmith's Gift","draw",1,"training","Item"],
-	["Corps Intelligence","draw",2,"training","Support"],
-	["Ubuyashiki's Guidance","draw",3,"training","Support"],
-	["Total Concentration","boost",20,"training","Support"],
-	["Hashira Training","boost",30,"training","Support"],
-	["Nichirin Polish","boost",10,"training","Item"],
-	["Unwavering Spirit","shield",20,"healing","Item"],
-	["Haganezuka's Resolve","boost",20,"training","Support"],
-	["Protect the Innocent","shield",30,"healing","Support"]
+# Curated utility set: 12 Support cards (one per turn) and 10 Item cards (any number per turn).
+# Each entry: [id, name, effect, value, art, kind]. Original IDs are kept so saved decks still load.
+const UTILITIES := [
+	["support_1","Butterfly Mansion","team_heal_cleanse",20,"healing","Support"],
+	["support_5","Wisteria Sanctuary","bench_heal",40,"healing","Support"],
+	["support_6","Urokodaki's Lesson","draw",2,"training","Support"],
+	["support_7","Kasugai Crow","draw_until",5,"training","Support"],
+	["support_8","Final Selection","draw",3,"training","Support"],
+	["support_10","Corps Intelligence","foe_switch",0,"training","Support"],
+	["support_11","Ubuyashiki's Guidance","cleanse_draw",2,"healing","Support"],
+	["support_12","Total Concentration","boost",20,"training","Support"],
+	["support_13","Hashira Training","boost",40,"training","Support"],
+	["support_16","Haganezuka's Resolve","boost_shield",20,"training","Support"],
+	["support_17","Protect the Innocent","shield",30,"healing","Support"],
+	["support_18","Kakushi Retrieval","retreat_free",0,"healing","Support"],
+	["support_0","Wisteria Medicine","cleanse_heal",30,"healing","Item"],
+	["support_2","Recovery Breathing","heal",20,"healing","Item"],
+	["support_3","Tamayo's Remedy","heal",50,"healing","Item"],
+	["support_4","Aoi's Care","remove_status",0,"healing","Item"],
+	["support_9","Swordsmith's Gift","draw",1,"training","Item"],
+	["support_14","Nichirin Polish","boost",10,"training","Item"],
+	["support_15","Unwavering Spirit","shield",20,"healing","Item"],
+	["item_00","Butterfly Poultice","heal_all",10,"healing","Item"],
+	["item_01","Sunlight Charm","boost_shield",10,"training","Item"],
+	["item_02","Kakushi Stretcher","bench_heal",20,"healing","Item"]
 ]
-
-const SUPPORT_EXTRA_SUBJECTS := ["Hashira Council","Corps Dispatch","Ubuyashiki's Order","Wisteria Escort","Swordsmith Meeting","Final Selection Brief","Kakushi Team","Butterfly Mansion Clinic","Crow Messenger","Demon Slayer Corps","Mountain Training","Night Watch","Rengoku's Resolve","Water Hashira's Counsel"]
-const SUPPORT_EXTRA_SUFFIXES := ["Plan","Briefing","Formation","Mandate"]
-const ITEM_EXTRA_SUBJECTS := ["Wisteria Salve","Nichirin Oil","Butterfly Poultice","Crow's Ration","Swordsmith Kit","Breathing Draught","Ubuyashiki Seal","Sunlight Charm","Mountain Bandage","Demon-Slaying Tonic","Calming Incense","Wisteria Powder","Hashira Field Kit","Haganezuka Stone"]
-const ITEM_EXTRA_SUFFIXES := ["Kit","Supply","Cache","Reserve"]
-const SUPPORT_EXTRA_EFFECTS := ["draw","boost","shield","heal","team_heal_cleanse","remove_status"]
-const ITEM_EXTRA_EFFECTS := ["heal","cleanse_heal","draw","boost","shield","remove_status","heal_all"]
-const EXTRA_VALUES := [10,20,30,40,50]
-const TOTAL_CARDS := 150
-const SUPPORT_EXTRA_COUNT := 46
+# 39 fighter cards + 12 Supports + 10 Items.
+const TOTAL_CARDS := 61
 
 static func catalog() -> Array[Dictionary]:
 	var cards: Array[Dictionary] = []
@@ -181,20 +178,9 @@ static func catalog() -> Array[Dictionary]:
 			_append_fighter(cards,spec)
 	for spec in SPECIAL_FIGHTERS:
 		_append_fighter(cards,spec)
-	for i in range(SUPPORTS.size()):
-		var s: Array = SUPPORTS[i]
-		_append_utility(cards,"support_"+str(i),str(s[0]),str(s[1]),int(s[2]),str(s[3]),str(s[4]),i)
-	for i in range(SUPPORT_EXTRA_COUNT):
-		var name: String = str(SUPPORT_EXTRA_SUBJECTS[i % SUPPORT_EXTRA_SUBJECTS.size()])+" "+str(SUPPORT_EXTRA_SUFFIXES[int(i / SUPPORT_EXTRA_SUBJECTS.size())])
-		var effect: String = str(SUPPORT_EXTRA_EFFECTS[i % SUPPORT_EXTRA_EFFECTS.size()])
-		var value: int = int(EXTRA_VALUES[i % EXTRA_VALUES.size()])
-		_append_utility(cards,"support_extra_%02d" % i,name,effect,value,"healing" if effect in ["heal","shield","team_heal_cleanse","remove_status"] else "training","Support",i+18)
-	var item_count: int = TOTAL_CARDS - cards.size()
-	for i in range(item_count):
-		var name: String = str(ITEM_EXTRA_SUBJECTS[i % ITEM_EXTRA_SUBJECTS.size()])+" "+str(ITEM_EXTRA_SUFFIXES[int(i / ITEM_EXTRA_SUBJECTS.size())])
-		var effect: String = str(ITEM_EXTRA_EFFECTS[i % ITEM_EXTRA_EFFECTS.size()])
-		var value: int = int(EXTRA_VALUES[(i+2) % EXTRA_VALUES.size()])
-		_append_utility(cards,"item_%02d" % i,name,effect,value,"healing" if effect in ["heal","cleanse_heal","heal_all","remove_status"] else "training","Item",i+64)
+	for i in range(UTILITIES.size()):
+		var u: Array = UTILITIES[i]
+		_append_utility(cards,str(u[0]),str(u[1]),str(u[2]),int(u[3]),str(u[4]),str(u[5]),i)
 	# Link Normal cards to the SURGE card they Boost into.
 	var by_id := {}
 	for card in cards: by_id[card.id] = card
@@ -237,9 +223,18 @@ static func _append_utility(cards: Array[Dictionary], id: String, name: String, 
 		"team_heal_cleanse":"Restore %d HP to each fighter and clear their status conditions.",
 		"draw":"Draw %d cards.",
 		"boost":"Your active fighter's next attack deals +%d damage.",
-		"shield":"Guard your active fighter against %d damage."
+		"shield":"Guard your active fighter against %d damage.",
+		"bench_heal":"Restore %d HP to each of your benched fighters.",
+		"draw_until":"Draw cards until you have %d cards in your hand.",
+		"cleanse_draw":"Clear status conditions from your active fighter, then draw %d cards.",
+		"boost_shield":"Your active fighter's next attack deals +%d damage, and it guards against that much damage."
 	}
-	var text: String = "Clear all status conditions from your active fighter." if effect == "remove_status" else str(descriptions.get(effect,"Restore %d HP to your active fighter.")) % value
+	var fixed := {
+		"remove_status":"Clear all status conditions from your active fighter.",
+		"foe_switch":"Your opponent switches their active fighter with their first benched fighter.",
+		"retreat_free":"This turn, your active fighter can retreat without paying Energy."
+	}
+	var text: String = str(fixed[effect]) if fixed.has(effect) else str(descriptions.get(effect,"Restore %d HP to your active fighter.")) % value
 	cards.append({"id":id,"number":cards.size()+1,"name":name,"short":name,"form":kind,"kind":kind,"color":"White","hp":0,
 		"surge":false,"rarity":"Rare" if ordinal % 5 == 0 else ("Uncommon" if ordinal % 3 == 0 else "Common"),
 		"art":art,"art_file":art,"alternate":false,"boost_from":"","boosts_to":"","attacks":[],"effect":effect,"value":value,"text":text})

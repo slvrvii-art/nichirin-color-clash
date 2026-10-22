@@ -408,6 +408,7 @@ func _begin_turn(side_index: int) -> void:
 	side.energy_ready = true
 	side.support_used = false
 	side.retreated = false
+	side["free_retreat"] = false
 	if not side.active.is_empty(): side.active["ability_used"] = false
 	for unit in side.bench: unit["ability_used"] = false
 	var types: Array = side.colors
@@ -556,7 +557,7 @@ func _battle_actions() -> void:
 	_text(root_ui,"Resolving…" if busy else "Attacking ends your turn.",Rect2(1132,195,250,24),12,MUTED)
 	if retreat_targeting and not me.active.is_empty():
 		_text(root_ui,"Retreat",Rect2(1131,245,246,58),20,CREAM,DISPLAY)
-		_text(root_ui,"Pay %d Energy from %s, then choose a bench fighter to switch into the active spot." % [_retreat_cost(me.active),me.active.short],Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_text(root_ui,"Pay %d Energy from %s, then choose a bench fighter to switch into the active spot." % [_side_retreat_cost(0),me.active.short],Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 		_button(root_ui,"CANCEL",Rect2(1132,404,245,40),func(): retreat_targeting=false; _render(),false,11)
 	elif attack_targeting >= 0 and not me.active.is_empty():
 		var a: Dictionary = me.active.attacks[attack_targeting]
@@ -619,7 +620,7 @@ func _battle_actions() -> void:
 				var attack_button := _button(root_ui,"%s   %d\n%s%s" % [a.name,a.damage,_cost_text(str(unit.color),a),status_tag],Rect2(1131,action_y+i*58,246,52),func(): _player_attack(i),_attack_legal(0,i),9)
 				attack_button.disabled=not _can_act(0) or not _attack_legal(0,i) or ability_targeting
 			var retreat_y: int = action_y+unit.attacks.size()*58+4
-			var cost: int = _retreat_cost(unit)
+			var cost: int = _side_retreat_cost(0)
 			var retreat := _button(root_ui,"RETREAT   •   COST %d ENERGY" % cost+("   (USED)" if me.retreated else ""),Rect2(1131,retreat_y,246,40),func(): retreat_targeting=true; _render(),false,10)
 			retreat.disabled=not _can_act(0) or not _can_retreat(0) or ability_targeting
 		else:
@@ -738,7 +739,24 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 		"draw": _draw_cards(side_index,amount)
 		"boost": side.active.boost+=amount
 		"shield": side.active.shield=maxi(side.active.shield,amount)
-
+		"bench_heal":
+			for unit in side.bench: unit.current_hp=mini(unit.hp,unit.current_hp+amount)
+		"draw_until": _draw_cards(side_index,maxi(0,amount-side.hand.size()))
+		"cleanse_draw":
+			_clear_statuses(side.active)
+			_draw_cards(side_index,amount)
+		"boost_shield":
+			side.active.boost+=amount
+			side.active.shield=maxi(side.active.shield,amount)
+		"foe_switch":
+			var foe: Dictionary = sides[1-side_index]
+			if not foe.active.is_empty() and not foe.bench.is_empty():
+				var moved: Dictionary = foe.active
+				for moved_status in ["Poison","Burn","Paralysis","Sleep"]: moved.get("statuses",[]).erase(moved_status)
+				foe.active = foe.bench[0]
+				foe.bench[0] = moved
+				_log("%s is pulled back; %s is forced into the active spot." % [moved.short,foe.active.short])
+		"retreat_free": side["free_retreat"] = true
 func _clear_statuses(unit: Dictionary) -> void:
 	unit["statuses"] = []
 
@@ -750,16 +768,21 @@ func _player_play() -> void:
 # Retreat cost: Normal fighters pay 1 Energy, SURGE fighters pay 2. Once per turn.
 func _retreat_cost(unit: Dictionary) -> int:
 	return int(unit.get("retreat_cost",2 if bool(unit.get("surge",false)) else 1))
+# Retreat cost for the side's current active fighter, including "retreat for free" effects.
+func _side_retreat_cost(side_index: int) -> int:
+	var side: Dictionary = sides[side_index]
+	if bool(side.get("free_retreat",false)): return 0
+	return _retreat_cost(side.active)
 func _can_retreat(side_index: int) -> bool:
 	var side: Dictionary = sides[side_index]
 	if side.retreated or side.active.is_empty() or side.bench.is_empty(): return false
 	if side.active.get("statuses",[]).has("Sleep"): return false
-	return side.active.energy.size() >= _retreat_cost(side.active)
+	return side.active.energy.size() >= _side_retreat_cost(side_index)
 func _retreat(side_index: int, bench_index: int) -> bool:
 	if not _can_act(side_index): return false
 	var side: Dictionary = sides[side_index]
 	if not _can_retreat(side_index) or bench_index<0 or bench_index>=side.bench.size(): return false
-	var cost: int = _retreat_cost(side.active)
+	var cost: int = _side_retreat_cost(side_index)
 	for i in range(cost): side.active.energy.pop_back()
 	var previous: Dictionary = side.active
 	for retreat_status in ["Poison","Burn","Paralysis"]: previous.get("statuses",[]).erase(retreat_status)

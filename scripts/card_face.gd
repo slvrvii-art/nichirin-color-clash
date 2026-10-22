@@ -128,7 +128,9 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 			label_at(attack_label,Vector2(10,attack_top+i*row),Vector2(w-46,19*s),9.5*s,Color("#f7eedf"))
 			label_at(str(a.damage),Vector2(w-38,attack_top+i*row),Vector2(30,19)*s,12*s,Color("#e7c57c"))
 	else:
-		label_at(str(data.text),Vector2(10,h*0.73),Vector2(w-20,h*0.17),10*s,Color("#e7decf"),BODY,true)
+		# Large cards wrap the full effect; small hand/board cards show one line with an ellipsis.
+		var effect_label := label_at(str(data.text),Vector2(10,h*0.73),Vector2(w-20,h*0.17 if w>=150 else 14*s),10*s,Color("#e7decf"),BODY,w>=150)
+		if w < 150: effect_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label_at("%03d  /  %d" % [int(data.number),DB.TOTAL_CARDS],Vector2(10,h-19*s),Vector2(w*0.52,16*s),8.5*s,Color("#93a1b6"))
 	if full_art:
 		surge_label(Vector2(w*0.52,h-21*s),Vector2(w*0.46-6*s,17*s),10*s)
@@ -177,4 +179,6 @@ func label_at(value: String, pos: Vector2, dims: Vector2, font_size: float, tint
 	if wrap: label.custom_minimum_size = Vector2(dims.x,0)
 	add_child(label)
 	label.size = dims
+	# Wrapped text re-measures once the card enters the tree; restore its box width then.
+	if wrap: label.set_deferred("size",dims)
 	return label
