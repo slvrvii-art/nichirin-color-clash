@@ -1,6 +1,6 @@
 # Nichirin: Color Clash outcomes
 
-- [x] Card catalogue: 150 unique cards. Each of 24 characters has exactly one Normal fighter and one SURGE fighter (48 fighters); 102 utility cards are split into 53 Support and 49 Item cards. Full/basic art selection and featured alternate art remain.
+- [x] Card catalogue: 55 unique cards—39 fighters, 10 Support and 6 Item. Fighter editions are Normal or SURGE; full/basic art selection and featured alternate art remain.
 - [x] Decks and utility plays: Exactly 20 cards per deck, at most two copies of each card. Support usable once per turn; multiple Items allowed per turn. Older saved fighter IDs migrate to the matching Normal/SURGE cards, and the deck stays legal.
 - [x] Color and board rules: Red, Blue, Yellow, Green, Purple, Pink and White Color Types; one generated Color Energy and one Energy attachment per turn; one active fighter and three bench spots; SURGE knockout awards 2 points.
 - [x] Status effects: Sleep, Poison, Burn and Paralysis on selected attacks, with turn-start coin flips, damage ticks, retreat clears, curing Items/Supports, status pills, logged coin results and clearing on knockout.
@@ -29,7 +29,7 @@
 - [x] Full-art SURGE cards no longer have dark translucent bands; text uses an outline instead.
 
 ## Utility cut
-- [x] Catalog reduced to 61 cards: 39 fighters, 12 Support, 10 Item; generated filler cards removed.
+- [x] Catalog reduced to 55 cards: 39 fighters, 10 Support, 6 Item; generated filler cards removed.
 - [x] Duplicate utility effects replaced with distinct ones (draw-to-5, forced opponent switch, free retreat, bench heal, cleanse+draw, boost+guard).
 - [x] Utility effect text wraps on large cards and trims on small cards.
 
@@ -41,3 +41,8 @@
 
 ## Tamayo's Remedy update
 - [x] Item effect is exactly “Restore 20 HP to your active fighter”; it heals the active fighter by 20 and does not clear status conditions.
+
+## Utility-effect update
+- [x] Recovery Breathing: flip a coin; on heads, generate one Energy from the Energy Zone and attach it to the active fighter.
+- [x] Sunlight Charm: “Your opponent shuffles their hand into their deck and draws 3 cards.”
+- [x] Remove Wisteria Medicine, Aoi's Care, Protect the Innocent, Haganezuka's Resolve, Butterfly Poultice and Nichirin Polish from the catalog; update preset/saved deck handling, card counts, and tests accordingly.

@@ -738,6 +738,20 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 				_clear_statuses(unit)
 		"remove_status": _clear_statuses(side.active)
 		"draw": _draw_cards(side_index,amount)
+		"coin_energy":
+			if _flip_coin():
+				var color: String = str(side.get("energy_color","White"))
+				side.active.energy.append(color)
+				_log("Heads! %s generates and attaches 1 %s Color Energy from the Energy Zone." % [side.active.short,color])
+			else:
+				_log("Tails! Recovery Breathing generates no Energy.")
+		"shuffle_draw":
+			var foe: Dictionary = sides[1-side_index]
+			foe.deck.append_array(foe.hand)
+			foe.hand.clear()
+			foe.deck.shuffle()
+			_draw_cards(1-side_index,amount)
+			_log("Sunlight Charm: the opponent shuffles their hand into their deck and draws %d cards." % amount)
 		"boost": side.active.boost+=amount
 		"shield": side.active.shield=maxi(side.active.shield,amount)
 		"bench_heal":

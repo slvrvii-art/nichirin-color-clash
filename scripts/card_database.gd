@@ -128,7 +128,7 @@ const SPECIAL_FIGHTERS := [
 			{"name":"Clear Blue Sky","damage":130,"cost":4,"color_cost":4,"effect":"discard_all_energy"}]}
 ]
 
-# Curated utility set: 12 Support cards (one per turn) and 10 Item cards (any number per turn).
+# Curated utility set: 10 Support cards (one per turn) and 6 Item cards (any number per turn).
 # Each entry: [id, name, effect, value, art, kind]. Original IDs are kept so saved decks still load.
 const UTILITIES := [
 	["support_1","Butterfly Mansion","team_heal_cleanse",20,"healing","Support"],
@@ -140,22 +140,16 @@ const UTILITIES := [
 	["support_11","Ubuyashiki's Guidance","cleanse_draw",2,"healing","Support"],
 	["support_12","Total Concentration","boost",20,"training","Support"],
 	["support_13","Hashira Training","boost",40,"training","Support"],
-	["support_16","Haganezuka's Resolve","boost_shield",20,"training","Support"],
-	["support_17","Protect the Innocent","shield",30,"healing","Support"],
 	["support_18","Kakushi Retrieval","retreat_free",0,"healing","Support"],
-	["support_0","Wisteria Medicine","cleanse_heal",30,"healing","Item"],
-	["support_2","Recovery Breathing","heal",20,"healing","Item"],
+	["support_2","Recovery Breathing","coin_energy",0,"healing","Item"],
 	["support_3","Tamayo's Remedy","heal",20,"healing","Item"],
-	["support_4","Aoi's Care","remove_status",0,"healing","Item"],
 	["support_9","Swordsmith's Gift","draw",1,"training","Item"],
-	["support_14","Nichirin Polish","boost",10,"training","Item"],
 	["support_15","Unwavering Spirit","shield",20,"healing","Item"],
-	["item_00","Butterfly Poultice","heal_all",10,"healing","Item"],
-	["item_01","Sunlight Charm","boost_shield",10,"training","Item"],
+	["item_01","Sunlight Charm","shuffle_draw",3,"training","Item"],
 	["item_02","Kakushi Stretcher","retreat_discount",1,"healing","Item"]
 ]
-# 39 fighter cards + 12 Supports + 10 Items.
-const TOTAL_CARDS := 61
+# 39 fighter cards + 10 Supports + 6 Items.
+const TOTAL_CARDS := 55
 
 static func catalog() -> Array[Dictionary]:
 	var cards: Array[Dictionary] = []
@@ -232,6 +226,8 @@ static func _append_utility(cards: Array[Dictionary], id: String, name: String, 
 		"boost_shield":"Your active fighter's next attack deals +%d damage, and it guards against that much damage."
 	}
 	var fixed := {
+		"coin_energy":"Flip a coin. If heads, generate an Energy from your Energy Zone and attach it to your active fighter.",
+		"shuffle_draw":"Your opponent shuffles their hand into their deck and draws 3 cards.",
 		"remove_status":"Clear all status conditions from your active fighter.",
 		"foe_switch":"Your opponent switches their active fighter with their first benched fighter.",
 		"retreat_free":"This turn, your active fighter can retreat without paying Energy.",
@@ -249,10 +245,10 @@ static func is_basic(card: Dictionary) -> bool:
 	return str(card.get("kind","")) == "Fighter" and str(card.get("boost_from","")) == ""
 
 static func starter_deck() -> Array:
-	return ["tanjiro_normal","tanjiro_normal","tanjiro_surge","tanjiro_surge","giyu_normal","giyu_normal","giyu_surge","giyu_surge","murata_normal","murata_normal","tanjiro_hinokami_surge","support_0","support_0","support_9","support_9","support_1","support_6","support_10","support_12","support_14"]
+	return ["tanjiro_normal","tanjiro_normal","tanjiro_surge","tanjiro_surge","giyu_normal","giyu_normal","giyu_surge","giyu_surge","murata_normal","murata_normal","tanjiro_hinokami_surge","support_2","support_2","support_9","support_9","support_1","support_6","support_10","support_12","item_01"]
 
 static func enemy_deck() -> Array:
-	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","susamaru_normal","susamaru_normal","susamaru_surge","susamaru_surge","yahaba_normal","yahaba_normal","support_0","support_0","support_2","support_2","support_6","support_7","support_12","support_17","support_9","support_9"]
+	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","susamaru_normal","susamaru_normal","susamaru_surge","susamaru_surge","yahaba_normal","yahaba_normal","support_2","support_2","support_3","support_3","support_6","support_7","support_12","support_1","support_9","support_9"]
 
 static func find_card(id: String) -> Dictionary:
 	for card in catalog():

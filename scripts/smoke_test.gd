@@ -22,7 +22,7 @@ func _unit(id: String) -> Dictionary:
 
 func _run() -> void:
 	var catalog := DB.catalog()
-	expect(catalog.size()==DB.TOTAL_CARDS and DB.TOTAL_CARDS==61,"61-card catalog")
+	expect(catalog.size()==DB.TOTAL_CARDS and DB.TOTAL_CARDS==55,"55-card catalog")
 	var ids := {}
 	var fighters := 0
 	var supports := 0
@@ -48,7 +48,9 @@ func _run() -> void:
 	expect(DB.is_basic(DB.find_card("kyogai_surge")) and DB.is_basic(DB.find_card("tanjiro_hinokami_surge")),"standalone SURGE cards are basic")
 	expect(not DB.is_basic(DB.find_card("susamaru_surge")),"Susamaru SURGE requires Boost")
 	expect(DB.find_card("murata_normal").hp==50 and DB.find_card("kyogai_surge").hp==130 and DB.find_card("aoi_normal").hp==70 and DB.find_card("susamaru_normal").hp==90 and DB.find_card("yahaba_normal").hp==80 and DB.find_card("tanjiro_hinokami_surge").hp==140,"new fighter HP")
-	expect(supports==12 and items==10,"exactly 12 Support and 10 Item cards")
+	expect(supports==10 and items==6,"exactly 10 Support and 6 Item cards")
+	for removed_id in ["support_0","support_4","support_14","support_16","support_17","item_00"]:
+		expect(DB.find_card(removed_id).is_empty(),"removed utility ID absent: "+removed_id)
 	for card in catalog:
 		if card.kind == "Fighter":
 			expect(int(card.hp) % 10 == 0,str(card.id)+" HP is a multiple of 10")
@@ -184,13 +186,30 @@ func _run() -> void:
 	me.active = _unit("tanjiro_normal")
 	me.bench = [_unit("giyu_normal")]
 	me.support_used = false
-	me.hand = [DB.find_card("support_0"),DB.find_card("support_9"),DB.find_card("support_2"),DB.find_card("support_6"),DB.find_card("support_7")]
+	me.hand = [DB.find_card("support_3"),DB.find_card("support_9"),DB.find_card("support_2"),DB.find_card("support_6"),DB.find_card("support_7")]
 	expect(game._play_card(0,0),"first Item")
 	expect(game._play_card(0,0),"second Item")
 	expect(game._play_card(0,0),"third Item")
 	expect(not me.support_used,"Items do not use the Support limit")
 	expect(game._play_card(0,0),"first Support")
 	expect(not game._play_card(0,0),"second Support rejected")
+	# Recovery Breathing adds the active Color Energy on heads without consuming the ordinary attachment.
+	me.active = _unit("giyu_normal")
+	me.active.energy = []
+	me.energy_color = "Purple"
+	me.energy_ready = true
+	game.coin_flip_overrides = [false]
+	me.hand = [DB.find_card("support_2")]
+	expect(game._play_card(0,0) and me.active.energy.is_empty() and me.energy_ready,"Recovery Breathing tails grants no Energy")
+	game.coin_flip_overrides = [true]
+	me.hand = [DB.find_card("support_2")]
+	expect(game._play_card(0,0) and me.active.energy==["Purple"] and me.energy_ready,"Recovery Breathing heads attaches Energy Zone color without spending normal attachment")
+	# Sunlight Charm recycles the opponent's full hand and draws three.
+	foe.hand = [DB.find_card("support_6"),DB.find_card("support_7")]
+	foe.deck = [DB.find_card("support_8"),DB.find_card("support_9"),DB.find_card("support_1"),DB.find_card("support_2")]
+	var foe_cards_before: int = foe.hand.size()+foe.deck.size()
+	me.hand = [DB.find_card("item_01")]
+	expect(game._play_card(0,0) and foe.hand.size()==3 and foe.hand.size()+foe.deck.size()==foe_cards_before,"Sunlight Charm shuffles opponent hand and draws 3")
 	# New utility effects
 	me.support_used = false
 	me.hand = [DB.find_card("support_7")]
@@ -263,8 +282,9 @@ func _run() -> void:
 	# Cure card clears statuses
 	game._apply_status(me.active,"Poison","Test")
 	game._apply_status(me.active,"Paralysis","Test")
-	me.hand = [DB.find_card("support_0")]
-	expect(game._play_card(0,0),"curing Item resolves")
+	me.support_used = false
+	me.hand = [DB.find_card("support_1")]
+	expect(game._play_card(0,0),"curing Support resolves")
 	expect(me.active.statuses.is_empty(),"curing Item clears statuses")
 
 	# Paralysis: tails -> 0 damage, no effect
@@ -305,6 +325,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] 61 cards (12 Support, 10 Item), new utility effects, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
+		print("[SMOKE_PASS] 55 cards (10 Support, 6 Item), removed utility IDs, Recovery Breathing coin Energy, Sunlight Charm shuffle/draw, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, Sleep/Poison/Burn/Paralysis, cures, GIF attack, auto/manual end turn")
 		quit(0)
 	else: quit(1)
