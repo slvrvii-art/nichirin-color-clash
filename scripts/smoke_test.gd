@@ -47,8 +47,12 @@ func _run() -> void:
 	expect(DB.find_card("tanjiro_normal").boosts_to=="tanjiro_surge" and DB.find_card("tanjiro_surge").boost_from=="tanjiro_normal","Boost links")
 	expect(DB.is_basic(DB.find_card("kyogai_surge")) and DB.is_basic(DB.find_card("tanjiro_hinokami_surge")),"standalone SURGE cards are basic")
 	expect(not DB.is_basic(DB.find_card("susamaru_surge")),"Susamaru SURGE requires Boost")
-	expect(DB.find_card("murata_normal").hp==50 and DB.find_card("kyogai_surge").hp==125 and DB.find_card("aoi_normal").hp==70 and DB.find_card("susamaru_normal").hp==90 and DB.find_card("yahaba_normal").hp==80 and DB.find_card("tanjiro_hinokami_surge").hp==140,"new fighter HP")
+	expect(DB.find_card("murata_normal").hp==50 and DB.find_card("kyogai_surge").hp==130 and DB.find_card("aoi_normal").hp==70 and DB.find_card("susamaru_normal").hp==90 and DB.find_card("yahaba_normal").hp==80 and DB.find_card("tanjiro_hinokami_surge").hp==140,"new fighter HP")
 	expect(supports==12 and items==10,"exactly 12 Support and 10 Item cards")
+	for card in catalog:
+		if card.kind == "Fighter":
+			expect(int(card.hp) % 10 == 0,str(card.id)+" HP is a multiple of 10")
+			for a in card.attacks: expect(int(a.damage) % 10 == 0,str(card.id)+" damage is a multiple of 10")
 	expect(ids.size()==catalog.size(),"all catalog IDs distinct")
 	for s in ["Sleep","Poison","Burn","Paralysis"]: expect(status_moves.has(s),s+" appears on at least one move")
 	expect(DB.migrate_card_id("tanjiro_4")=="tanjiro_surge" and DB.migrate_card_id("giyu_2")=="giyu_normal","old fighter IDs migrate")
@@ -149,7 +153,7 @@ func _run() -> void:
 	me.active.energy = ["Red","Red","Red","Red"]
 	expect(game._attack_legal(0,1),"Clear Blue Sky legal with 4 Red")
 	foe.active.current_hp = 200
-	expect(game._resolve_attack(0,1)==125 and me.active.energy.is_empty(),"Clear Blue Sky deals 125 and removes all Energy")
+	expect(game._resolve_attack(0,1)==130 and me.active.energy.is_empty(),"Clear Blue Sky deals 130 and removes all Energy")
 	# Murata Cheer draws 1 for free
 	me.active = _unit("murata_normal")
 	var hand_before: int = me.hand.size()

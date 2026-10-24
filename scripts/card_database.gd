@@ -106,7 +106,7 @@ const EFFECT_TEXT := {
 const SPECIAL_FIGHTERS := [
 	{"id":"murata_normal","name":"Murata","short":"Murata","color":"Blue","hp":50,"surge":false,"art":"murata",
 		"attacks":[{"name":"Cheer","damage":0,"cost":0,"color_cost":0,"effect":"draw"}]},
-	{"id":"kyogai_surge","name":"Kyogai","short":"Kyogai","color":"Yellow","hp":125,"surge":true,"art":"kyogai",
+	{"id":"kyogai_surge","name":"Kyogai","short":"Kyogai","color":"Yellow","hp":130,"surge":true,"art":"kyogai",
 		"ability_id":"rapid_drumming","ability_kind":"active","ability_name":"Rapid Drumming",
 		"ability_text":"Once per turn, choose one of your opponent's benched fighters that has damage on it. Move it to their active spot.",
 		"attacks":[{"name":"Drum Spell: Slash","damage":70,"cost":2,"color_cost":2,"effect":"none"}]},
@@ -125,7 +125,7 @@ const SPECIAL_FIGHTERS := [
 		"ability_id":"kagura_dance","ability_kind":"passive","ability_name":"Kagura Dance",
 		"ability_text":"At the start of your turn, if this fighter is in the active spot, generate 1 Red Energy onto it.",
 		"attacks":[{"name":"Raging Sun","damage":60,"cost":2,"color_cost":2,"effect":"none"},
-			{"name":"Clear Blue Sky","damage":125,"cost":4,"color_cost":4,"effect":"discard_all_energy"}]}
+			{"name":"Clear Blue Sky","damage":130,"cost":4,"color_cost":4,"effect":"discard_all_energy"}]}
 ]
 
 # Curated utility set: 12 Support cards (one per turn) and 10 Item cards (any number per turn).
@@ -199,6 +199,8 @@ static func _append_fighter(cards: Array[Dictionary], spec: Dictionary) -> void:
 		var attack: Dictionary = (a as Dictionary).duplicate(true)
 		if not attack.has("status"): attack["status"] = ""
 		if not attack.has("color_cost"): attack["color_cost"] = 1
+		# All damage values are whole tens (never ending in 5).
+		attack["damage"] = round_up_10(int(attack.damage))
 		attack["text"] = str(EFFECT_TEXT.get(str(attack.effect),""))
 		attacks.append(attack)
 	var boost_from: String = str(spec.get("boost_from",""))
@@ -207,7 +209,7 @@ static func _append_fighter(cards: Array[Dictionary], spec: Dictionary) -> void:
 	elif surge: text = "Standalone SURGE: play it directly. Awards 2 points when defeated."
 	else: text = "Normal fighter."
 	cards.append({"id":str(spec.id),"number":cards.size()+1,"name":str(spec.name),"short":str(spec.get("short",spec.name)),
-		"form":"SURGE" if surge else "Normal","kind":"Fighter","retreat_cost":2 if surge else 1,"color":str(spec.color),"hp":int(spec.hp),"surge":surge,
+		"form":"SURGE" if surge else "Normal","kind":"Fighter","retreat_cost":2 if surge else 1,"color":str(spec.color),"hp":round_up_10(int(spec.hp)),"surge":surge,
 		"rarity":"SURGE" if surge else "Normal","art":art,
 		"art_file":art+("_full" if surge and art in FULL_ART_FILES else ""),
 		"alternate":surge,"boost_from":boost_from,"boosts_to":"",
@@ -238,6 +240,9 @@ static func _append_utility(cards: Array[Dictionary], id: String, name: String, 
 	cards.append({"id":id,"number":cards.size()+1,"name":name,"short":name,"form":kind,"kind":kind,"color":"White","hp":0,
 		"surge":false,"rarity":"Rare" if ordinal % 5 == 0 else ("Uncommon" if ordinal % 3 == 0 else "Common"),
 		"art":art,"art_file":art,"alternate":false,"boost_from":"","boosts_to":"","attacks":[],"effect":effect,"value":value,"text":text})
+
+static func round_up_10(value: int) -> int:
+	return int(ceil(value / 10.0)) * 10
 
 static func is_basic(card: Dictionary) -> bool:
 	return str(card.get("kind","")) == "Fighter" and str(card.get("boost_from","")) == ""

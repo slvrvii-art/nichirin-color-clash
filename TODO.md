@@ -32,3 +32,6 @@
 - [x] Catalog reduced to 61 cards: 39 fighters, 12 Support, 10 Item; generated filler cards removed.
 - [x] Duplicate utility effects replaced with distinct ones (draw-to-5, forced opponent switch, free retreat, bench heal, cleanse+draw, boost+guard).
 - [x] Utility effect text wraps on large cards and trims on small cards.
+
+## Rounded stats
+- [x] All fighter HP and attack damage rounded up to the nearest 10 (no values ending in 5).
