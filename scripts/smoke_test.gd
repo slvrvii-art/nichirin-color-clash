@@ -215,6 +215,12 @@ func _run() -> void:
 	me.hand = [DB.find_card("item_02")]
 	expect(game._play_card(0,0) and game._side_retreat_cost(0)==1 and game._can_retreat(0),"Kakushi Stretcher lowers retreat cost by 1")
 	me.retreat_discount = 0
+	me.active = _unit("giyu_surge")
+	me.active.current_hp = 90
+	me.active.statuses = ["Poison"]
+	me.hand = [DB.find_card("support_3")]
+	expect(me.hand[0].text=="Restore 20 HP to your active fighter.","Tamayo's Remedy displays the requested effect")
+	expect(game._play_card(0,0) and me.active.current_hp==110 and me.active.statuses.has("Poison"),"Tamayo's Remedy heals 20 without clearing status")
 
 	# Sleep blocks attack and retreat; heads at turn start wakes
 	me.active = _unit("tanjiro_normal")

@@ -38,3 +38,6 @@
 
 ## Kakushi Stretcher
 - [x] Item effect: during this turn, your active fighter retreat cost is 1 less.
+
+## Tamayo's Remedy update
+- [x] Item effect is exactly “Restore 20 HP to your active fighter”; it heals the active fighter by 20 and does not clear status conditions.

@@ -145,7 +145,7 @@ const UTILITIES := [
 	["support_18","Kakushi Retrieval","retreat_free",0,"healing","Support"],
 	["support_0","Wisteria Medicine","cleanse_heal",30,"healing","Item"],
 	["support_2","Recovery Breathing","heal",20,"healing","Item"],
-	["support_3","Tamayo's Remedy","heal",50,"healing","Item"],
+	["support_3","Tamayo's Remedy","heal",20,"healing","Item"],
 	["support_4","Aoi's Care","remove_status",0,"healing","Item"],
 	["support_9","Swordsmith's Gift","draw",1,"training","Item"],
 	["support_14","Nichirin Polish","boost",10,"training","Item"],
