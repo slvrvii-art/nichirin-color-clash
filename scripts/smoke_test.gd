@@ -70,21 +70,39 @@ func _run() -> void:
 	await process_frame
 	expect(game.screen_name=="home","boots to game hub")
 	game.deck=DB.starter_deck()
-	# Random first player: both outcomes occur over repeated starts.
+	game.show_coin_flip_animations = false
+	game.reduced_motion = true
+	var coin_events_before: int = game.coin_flip_events
+	game.coin_flip_overrides = [true]
+	game.show_coin_flip_animations = true
+	var observed_heads: bool = game._flip_coin()
+	expect(observed_heads and game.coin_flip_events==coin_events_before+1 and game.coin_animation_queue.size()==1,"each coin flip queues its animated result")
+	game.show_coin_flip_animations = false
+	game.coin_animation_queue.clear()
+	game.coin_flip_overrides.clear()
+	# The real first-player helper uses the same animated coin-resolution path.
 	var firsts := {}
 	for n in range(24):
-		game._start_battle()
-		firsts[game.current_side] = true
+		firsts[game._roll_first_side()] = true
 	expect(firsts.has(0) and firsts.has(1),"first player is random")
-	game._go("home")
-	await create_timer(0.3).timeout
 	game.first_side_override = 0
 	game._start_battle()
-	game.reduced_motion=false
-	await create_timer(2.0).timeout
+	expect(game.opening_active_pending and game.sides[0].active.is_empty(),"player must choose the opening Active")
+	expect(DB.is_basic(game.sides[1].active) and game.sides[1].hand.size()==4,"AI chooses an eligible fighter from its opening hand")
+	var starters: Array = game._opening_fighter_indices(0)
+	expect(not starters.is_empty(),"opening hand contains a Normal or standalone SURGE starter")
+	var ineligible_index := -1
+	for i in range(game.sides[0].hand.size()):
+		if game.sides[0].hand[i].kind=="Fighter" and not DB.is_basic(game.sides[0].hand[i]): ineligible_index=i
+	if ineligible_index >= 0:
+		expect(not game._choose_opening_active(0,ineligible_index),"paired SURGE cannot be selected as an opening Active")
+	expect(game._choose_opening_active(0,int(starters[0])),"player sets an opening Active from hand")
+	expect(game.sides[0].active.kind=="Fighter" and game.sides[0].hand.size()==4,"chosen starter leaves the opening hand")
+	await create_timer(1.0).timeout
+	expect(game.battle_started and game.sides[0].turns_taken==1,"first turn starts after Active choice and coin banner")
 	var me: Dictionary = game.sides[0]
 	var foe: Dictionary = game.sides[1]
-	expect(not me.active.is_empty(),"opening active placed")
+	expect(not me.active.is_empty(),"opening Active fighter placed")
 	expect(not game._attach_energy(0,-1),"no Energy on the first turn")
 	game.turn_number = 2
 	me.energy_ready = true
@@ -107,17 +125,33 @@ func _run() -> void:
 	expect(game._is_target_option(0,0) and not game._is_target_option(1,0),"retreat targets your bench")
 	game.retreat_targeting = false
 
-	# Boost timing: not on the turn the Normal card was played
+	# Standalone SURGE is playable immediately, even on its owner's first turn.
+	game.turn_number = 1
+	me.turns_taken = 1
+	me.active = _unit("murata_normal")
+	me.bench = []
+	me.hand = [DB.find_card("kyogai_surge")]
+	expect(game._play_card(0,0),"standalone SURGE plays normally on the first turn")
+	me.bench = []
+	game.turn_number = 2
+
+	# Paired SURGE requires the owner's second turn and a different turn from the Normal play.
 	me.active = _unit("murata_normal")
 	me.bench = []
 	me.retreated = false
 	me.hand = [_unit("giyu_normal"), _unit("giyu_surge")]
+	me.turns_taken = 1
 	expect(game._play_card(0,0),"bench Giyu")
 	expect(not game._boost(0,0,0),"cannot Boost on the turn played")
+	expect(not game._boost_ready(0,0),"paired SURGE is locked on the owner's first turn")
+	me.turns_taken = 2
 	game.turn_number += 1
-	expect(game._boost(0,0,0) and me.bench[0].id=="giyu_surge","Boost next turn")
+	expect(game._boost(0,0,0) and me.bench[0].id=="giyu_surge","Boost after the Normal is established and the owner starts their second turn")
 	me.bench[0]["played_turn"] = game.turn_number
 	me.bench[0]["boost_now"] = true
+	me.turns_taken = 1
+	expect(not game._boost_ready(0,0),"same-turn Boost effect cannot bypass the second-turn requirement")
+	me.turns_taken = 2
 	expect(game._boost_ready(0,0),"card effect may allow Boosting immediately")
 
 	# Boost: SURGE needs its Normal in play; keeps energy and damage
@@ -178,6 +212,26 @@ func _run() -> void:
 	var pts: int = me.points
 	game._knockout_check(1)
 	expect(foe.bench.is_empty() and me.points==pts+1,"bench knockout scores")
+	foe.bench = []
+	foe.points = 0
+	me.points = 0
+	# A human must choose a benched replacement after its Active is Knocked Out.
+	me.active = _unit("tanjiro_normal")
+	me.active.current_hp = 0
+	me.bench = [_unit("giyu_normal"),_unit("murata_normal")]
+	foe.active = _unit("rengoku_normal")
+	game.pending_replacement_side = -1
+	game.pending_turn_advance = -1
+	game._knockout_check(0)
+	expect(game.pending_replacement_side==0 and me.active.is_empty(),"player replacement pauses after an Active knockout")
+	expect(game._is_target_option(0,1) and not game._can_act(0),"only own bench cards are replacement options")
+	expect(game._choose_replacement(0,1) and me.active.id=="murata_normal" and me.bench[0].id=="giyu_normal","player chooses which bench fighter becomes Active")
+	# The AI chooses its highest-survivability bench card automatically.
+	foe.active = _unit("rengoku_normal")
+	foe.active.current_hp = 0
+	foe.bench = [_unit("yahaba_normal"),_unit("susamaru_normal")]
+	game._knockout_check(1)
+	expect(foe.active.id=="susamaru_normal" and foe.bench.size()==1,"AI chooses its own bench replacement")
 	foe.bench = []
 	foe.points = 0
 	me.points = 0
@@ -383,8 +437,12 @@ func _run() -> void:
 	expect(game.current_side==1,"attack automatically ends turn")
 	game._go("home")
 	await create_timer(0.9).timeout
+	game.first_side_override = 0
 	game._start_battle()
-	await create_timer(2.0).timeout
+	var end_turn_starters: Array = game._opening_fighter_indices(0)
+	if not end_turn_starters.is_empty(): game._choose_opening_active(0,int(end_turn_starters[0]))
+	await create_timer(1.0).timeout
+	expect(game.battle_started,"second duel waits for opening choice before starting")
 	game._end_turn_requested()
 	await create_timer(0.1).timeout
 	expect(game.current_side==1,"explicit End Turn changes side")
@@ -392,6 +450,6 @@ func _run() -> void:
 	game.free()
 	await create_timer(0.9).timeout
 	if failures.is_empty():
-		print("[SMOKE_PASS] 51 cards (4 Support, 8 Item), revised utility effects and selectable choices, removed utility IDs, Recovery Breathing, Sunlight Charm, randomized fighter/deck effects, random first player, first-turn Energy lock, retreat costs, Boost timing, Boost, new fighters and abilities, Normal/SURGE fighters, Items vs Support, four status conditions, GIF attack, auto/manual end turn")
+		print("[SMOKE_PASS] 51 cards (4 Support, 8 Item), revised utility effects, randomized first player, coin animation queue, opening Active choice, knockout bench replacement, first-turn Energy lock, second-own-turn Boost, standalone SURGE, retreat costs, status effects, GIF attack, auto/manual end turn")
 		quit(0)
 	else: quit(1)

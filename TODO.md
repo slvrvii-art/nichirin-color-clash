@@ -6,7 +6,7 @@
 - [x] Status effects: Sleep, Poison, Burn and Paralysis on selected attacks, with turn-start coin flips, damage ticks, retreat clears, curing Items/Supports, status pills, logged coin results and clearing on knockout.
 - [x] Attack animation: User-supplied 18-frame slash GIF plays once per attack with a transparent background; damage feedback stays separate; original GIF preserved in source-art.
 - [x] Existing battle flow: Muzan's once-per-turn Blood Dominion, auto turn end on attack, explicit End Turn, turn banner, deck limit, bench capacity and AI.
-- [x] Updated delivery: Tests and native renders pass; checkpoint b0a2bf3 saved and published.
+- [x] Previous delivery: Checkpoint `12a3d97fecff4d23d720e309b67be53fe43d0301` passed the smoke, AI-match, managed and pack checks; it is published at https://nichirin-eakw5bhv.manus.game.
 
 ## Boost update
 - [x] Normal fighters: basic art, one attack. SURGE fighters: full art.
@@ -57,4 +57,12 @@
 - [x] Make Kakushi Retrieval an Item; choose a fighter in your hand and swap it with a random fighter in your deck.
 - [x] Swordsmith's Gift reveals the top card of your deck, then lets you choose whether to shuffle your deck.
 - [x] Recalculate card counts, update preset/deck recovery behavior, show all effect text/choices in game, and verify the effects.
-- [ ] Updated delivery: Save and confirm the matching managed checkpoint, prepared sharing metadata and live publication.
+- [x] Updated delivery: Smoke and AI-match tests passed; `npm run check` and pack verification succeeded; the matching checkpoint and 51-card sharing metadata were confirmed and published.
+
+## Battle setup and turn-choice update
+- [x] Show a simple Demon Slayer/Nichirin-themed coin-flip animation and its Heads/Tails result every time a coin is flipped.
+- [x] Before turns begin, each player chooses an eligible fighter from their opening hand for the Active spot; the opponent AI chooses from its own starting hand.
+- [x] When an Active Fighter is Knocked Out and its player has benched fighters, let that player choose which benched fighter becomes Active; the AI chooses its own replacement.
+- [x] A paired SURGE card can be Boosted only from its owner's second turn onward, and never on the turn its Normal fighter entered play, except where an existing explicit card effect overrides the same-turn restriction. Standalone SURGE cards remain directly playable.
+- [x] Update the in-game turn guidance and verify random setup, both replacement paths, all coin-flip call sites, and Boost timing.
+- [ ] Updated delivery: Prepare the release pack, push and confirm the corresponding canonical checkpoint, then verify publication.

@@ -7,6 +7,7 @@ func run() -> void:
 	await process_frame
 	game.deck=CardDatabase.starter_deck()
 	game.reduced_motion=true
+	game.show_coin_flip_animations=false
 	game._start_battle()
 	var elapsed := 0.0
 	var attacks := 0
@@ -17,6 +18,13 @@ func run() -> void:
 		if game.battle_over:
 			completed=true
 			break
+		if game.opening_active_pending:
+			var starters: Array = game._opening_fighter_indices(0)
+			if not starters.is_empty(): game._choose_opening_active(0,int(starters[0]))
+			continue
+		if game.pending_replacement_side == 0:
+			game._choose_replacement(0,0)
+			continue
 		if not game.pending_utility_choice.is_empty():
 			var pending: Dictionary = game.pending_utility_choice.duplicate(true)
 			var option: Dictionary = {}

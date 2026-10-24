@@ -9,6 +9,7 @@ const LAYOUT := preload("res://scripts/battle_layout.gd")
 const ATOMIC := preload("res://scripts/atomic_json_file.gd")
 const LICENSES := preload("res://scripts/manus/open_source_licenses.gd")
 const ATTACK_SLASH_FRAMES := preload("res://assets/interface/attack_slash_frames.tres")
+const COIN_UI := preload("res://scripts/coin_flip_animation.gd")
 const BODY := preload("res://assets/template/fonts/ui_regular.tres")
 const MEDIUM := preload("res://assets/template/fonts/ui_medium.tres")
 const DISPLAY := preload("res://assets/template/fonts/display/card_title.tres")
@@ -43,6 +44,12 @@ var current_side := 0
 var turn_number := 1
 var busy := false
 var battle_over := false
+var battle_started := false
+var opening_active_pending := false
+var opening_banner_complete := false
+var pending_replacement_side := -1
+var pending_begin_turn := -1
+var pending_turn_advance := -1
 var paused := false
 var generation := 0
 var selected_hand := -1
@@ -59,6 +66,12 @@ var attack_gif_animations := 0
 var damage_animations := 0
 var turn_animations := 0
 var coin_flip_overrides: Array = []
+var coin_overlay: CanvasLayer
+var show_coin_flip_animations := true
+var coin_flip_events := 0
+var coin_flip_animations := 0
+var coin_animation_queue: Array = []
+var coin_animation_running := false
 var attack_targeting := -1
 var retreat_targeting := false
 # Tests may force who goes first; -1 means a random coin flip.
@@ -69,6 +82,9 @@ var boost_animations := 0
 func _ready() -> void:
 	TranslationServer.set_locale("en")
 	rng.randomize()
+	coin_overlay = COIN_UI.new()
+	coin_overlay.layer = 40
+	add_child(coin_overlay)
 	catalog = DB.catalog()
 	for card in catalog: cards_by_id[card.id] = card
 	_load_save()
@@ -113,6 +129,11 @@ func _go(screen: String) -> void:
 		generation += 1
 		busy = false
 		battle_over = true
+		battle_started = false
+		opening_active_pending = false
+		pending_replacement_side = -1
+		pending_begin_turn = -1
+		pending_turn_advance = -1
 	paused = false
 	pending_utility_choice.clear()
 	_close_modal()
@@ -356,17 +377,13 @@ func _new_side(ids: Array) -> Dictionary:
 		pile.push_front(opening)
 	var hand: Array = []
 	for i in range(mini(5,pile.size())): hand.append(pile.pop_front())
+	# Keep the starting Normal/standalone fighter in hand until its owner chooses it.
 	var active: Dictionary = {}
-	for i in range(hand.size()):
-		if DB.is_basic(hand[i]):
-			active = hand[i]
-			hand.remove_at(i)
-			break
 	var types: Array = []
 	for id in ids:
 		var c: Dictionary = cards_by_id[str(id)]
 		if c.kind == "Fighter" and not types.has(c.color): types.append(c.color)
-	return {"deck":pile,"hand":hand,"active":active,"bench":[],"discard":[],"points":0,"energy_ready":false,"energy_color":"Blue","colors":types,"support_used":false,"retreated":false}
+	return {"deck":pile,"hand":hand,"active":active,"bench":[],"discard":[],"points":0,"energy_ready":false,"energy_color":"Blue","colors":types,"support_used":false,"retreated":false,"turns_taken":0}
 
 func _start_battle() -> void:
 	var error := DB.validate_deck(deck)
@@ -377,12 +394,18 @@ func _start_battle() -> void:
 		return
 	generation += 1
 	sides = [_new_side(deck),_new_side(DB.enemy_deck())]
-	# A coin flip decides who takes the first turn.
-	current_side = first_side_override if first_side_override >= 0 else rng.randi_range(0,1)
+	screen_name = "battle"
+	current_side = _roll_first_side()
 	turn_number = 1
 	busy = false
 	paused = false
 	battle_over = false
+	battle_started = false
+	opening_active_pending = true
+	opening_banner_complete = false
+	pending_replacement_side = -1
+	pending_begin_turn = -1
+	pending_turn_advance = -1
 	selected_hand = -1
 	selected_board = -1
 	ability_targeting = false
@@ -391,23 +414,79 @@ func _start_battle() -> void:
 	retreat_targeting = false
 	pending_boost_flash = ""
 	battle_log = ["Duel begins. First to 3 knockout points wins.", "Coin flip: "+("you go first." if current_side==0 else "your rival goes first.")+" No Energy can be attached on the first turn."]
-	screen_name = "battle"
-	notice = "Select a fighter, attach Color Energy, then attack."
-	_begin_turn(current_side)
+	for side_index in range(2):
+		sides[side_index].active = {}
+	_choose_ai_opening_active()
+	notice = "Choose a Normal or standalone SURGE fighter from your starting hand for the Active spot."
 	_render()
 	_opening_sequence(generation)
+
+func _roll_first_side() -> int:
+	if first_side_override >= 0: return first_side_override
+	return 0 if _flip_coin() else 1
+
+func _opening_fighter_indices(side_index: int) -> Array:
+	var result: Array = []
+	if side_index < 0 or side_index >= sides.size(): return result
+	for i in range(sides[side_index].hand.size()):
+		if DB.is_basic(sides[side_index].hand[i]): result.append(i)
+	return result
+
+func _choose_opening_active(side_index: int, hand_index: int) -> bool:
+	if not opening_active_pending or side_index < 0 or side_index >= sides.size(): return false
+	var side: Dictionary = sides[side_index]
+	if not side.active.is_empty() or hand_index < 0 or hand_index >= side.hand.size(): return false
+	var fighter: Dictionary = side.hand[hand_index]
+	if not DB.is_basic(fighter): return false
+	side.hand.remove_at(hand_index)
+	fighter["played_turn"] = 0
+	side.active = fighter
+	if side_index == 0:
+		opening_active_pending = false
+		selected_hand = -1
+		notice = "Active fighter selected."
+		_log("You choose %s as your Active Fighter." % fighter.name)
+		_render()
+		if opening_banner_complete: _complete_opening_setup()
+	else:
+		_log("Your rival chooses %s as their Active Fighter." % fighter.name)
+	return true
+
+func _choose_ai_opening_active() -> bool:
+	var options := _opening_fighter_indices(1)
+	if options.is_empty(): return false
+	var best_index: int = int(options[0])
+	for option in options:
+		var index: int = int(option)
+		if int(sides[1].hand[index].hp) > int(sides[1].hand[best_index].hp): best_index = index
+	return _choose_opening_active(1,best_index)
+
 func _opening_sequence(token: int) -> void:
 	busy = true
 	await _turn_banner("COIN FLIP  •  "+("YOU GO FIRST" if current_side==0 else "RIVAL GOES FIRST"),current_side,1.2)
 	if generation != token: return
-	await _wait_unpaused(token)
-	if generation != token: return
+	opening_banner_complete = true
 	busy = false
 	_render()
-	if current_side == 1: _ai_turn(token)
+	if not opening_active_pending: _complete_opening_setup()
+
+func _complete_opening_setup() -> void:
+	if battle_started or opening_active_pending or not opening_banner_complete: return
+	if sides.size() < 2 or sides[0].active.is_empty() or sides[1].active.is_empty(): return
+	battle_started = true
+	busy = true
+	_begin_turn(current_side)
+	if battle_over:
+		busy = false
+		_render()
+		return
+	busy = false
+	_render()
+	if current_side == 1: _ai_turn(generation)
 
 func _begin_turn(side_index: int) -> void:
 	var side: Dictionary = sides[side_index]
+	side.turns_taken = int(side.get("turns_taken",0))+1
 	side.energy_ready = true
 	side.support_used = false
 	side.retreated = false
@@ -419,15 +498,41 @@ func _begin_turn(side_index: int) -> void:
 	side.energy_color = types[rng.randi_range(0,types.size()-1)] if not types.is_empty() else "White"
 	_apply_turn_start_statuses(side_index)
 	if battle_over: return
-	if not side.active.is_empty() and str(side.active.get("ability_id",""))=="kagura_dance":
+	if pending_replacement_side == side_index:
+		pending_begin_turn = side_index
+		return
+	if side.active.is_empty(): _knockout_check(side_index)
+	if battle_over: return
+	if pending_replacement_side == side_index:
+		pending_begin_turn = side_index
+		return
+	_complete_turn_start(side_index)
+
+func _complete_turn_start(side_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	if battle_over or side.active.is_empty(): return
+	if str(side.active.get("ability_id",""))=="kagura_dance":
 		side.active.energy.append("Red")
 		_log(str(side.active.short)+" uses Kagura Dance: +1 Red Energy.")
 	_draw_cards(side_index,1)
 	_log("You draw a card." if side_index == 0 else "Opponent draws a card.")
 
 func _flip_coin() -> bool:
-	if not coin_flip_overrides.is_empty(): return bool(coin_flip_overrides.pop_front())
-	return rng.randi_range(0,1)==1
+	coin_flip_events += 1
+	var heads: bool = bool(coin_flip_overrides.pop_front()) if not coin_flip_overrides.is_empty() else rng.randi_range(0,1)==1
+	if show_coin_flip_animations:
+		coin_animation_queue.append(heads)
+		if not coin_animation_running: call_deferred("_drain_coin_animation_queue")
+	return heads
+
+func _drain_coin_animation_queue() -> void:
+	if coin_animation_running or not show_coin_flip_animations or not is_instance_valid(coin_overlay): return
+	coin_animation_running = true
+	while not coin_animation_queue.is_empty():
+		var heads: bool = bool(coin_animation_queue.pop_front())
+		coin_flip_animations += 1
+		await coin_overlay.play(heads,reduced_motion)
+	coin_animation_running = false
 
 func _apply_turn_start_statuses(side_index: int) -> void:
 	var side: Dictionary = sides[side_index]
@@ -474,17 +579,22 @@ func _draw_cards(side_index: int, count: int) -> void:
 			side.hand.append(drawn)
 
 func _battle() -> void:
-	_header("COLOR CLASH","One active fighter. Three bench spots. One decisive attack ends your turn.")
+	_header("COLOR CLASH","Choose your opening Active, then duel. One active fighter and three bench spots.")
 	var me: Dictionary = sides[0]
 	var enemy: Dictionary = sides[1]
 	_text(root_ui,"OPPONENT",Rect2(433,117,500,24),11,RED,MEDIUM)
-	_text(root_ui,"YOUR ACTIVE",Rect2(433,424,380,24),11,GOLD,MEDIUM)
+	_text(root_ui,"CHOOSE NEW ACTIVE" if pending_replacement_side==0 else ("YOUR ACTIVE" if not opening_active_pending else "CHOOSE YOUR ACTIVE"),Rect2(433,424,380,24),11,GOLD,MEDIUM)
 	_text(root_ui,"BENCH  /  %d OF 3" % enemy.bench.size(),Rect2(661,120,395,25),10,MUTED)
 	_text(root_ui,"BENCH  /  %d OF 3" % me.bench.size(),Rect2(661,447,395,25),10,MUTED)
 	for side_index in range(2):
 		var side: Dictionary = sides[side_index]
 		var active_rect: Rect2 = battle_layout.zone(&"player_active" if side_index==0 else &"enemy_active")
-		_board_card(side_index,-1,side.active,active_rect)
+		if side.active.is_empty():
+			_panel(root_ui,active_rect,Color(0.05,0.07,0.12,0.75),Color("#c8ac72") if side_index==0 else Color("#344056"),8)
+			var prompt := "CHOOSE FROM\nYOUR BENCH" if pending_replacement_side==side_index else ("CHOOSE FROM\nYOUR HAND" if side_index==0 and opening_active_pending else "ACTIVE SPOT")
+			_text(root_ui,prompt,Rect2(active_rect.position+Vector2(10,55),active_rect.size-Vector2(20,70)),15,GOLD,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER,true)
+		else:
+			_board_card(side_index,-1,side.active,active_rect)
 		for i in range(3):
 			var rect: Rect2 = battle_layout.bench(side_index,i)
 			if i < side.bench.size():
@@ -503,16 +613,31 @@ func _battle() -> void:
 	_text(root_ui,"\n\n".join(battle_log.slice(maxi(0,battle_log.size()-5))),Rect2(169,366,187,290),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	for i in range(mini(5,enemy.hand.size())):
 		_image(root_ui,"res://assets/interface/card_back.png",Rect2(924+i*20,110,27,40))
-	_text(root_ui,"YOUR HAND  /  click a card to play",Rect2(154,711,900,24),11,GOLD)
+	var hand_title := "YOUR STARTING HAND  /  choose a fighter for Active" if opening_active_pending else ("STARTING CHOICE COMPLETE" if not battle_started else "YOUR HAND  /  click a card to play")
+	_text(root_ui,hand_title,Rect2(154,711,900,24),11,GOLD)
 	var hand: Array = me.hand
 	var width := minf(110,925.0/maxi(1,hand.size())-7)
 	for i in range(hand.size()):
 		var rect := Rect2(155+i*(width+7),742,width,128)
-		var node := _card(root_ui,hand[i],rect,func():
-			if _can_act(0): selected_hand=i; selected_board=-1; attack_targeting=-1; ability_targeting=false; retreat_targeting=false; _render(),true)
+		var node := _card(root_ui,hand[i],rect,func(): _hand_clicked(i),true)
 		if selected_hand==i: node.modulate=Color(1.15,1.12,0.9)
 	_battle_actions()
 	if battle_over: _result_modal()
+
+func _hand_clicked(index: int) -> void:
+	if opening_active_pending:
+		if index < 0 or index >= sides[0].hand.size(): return
+		selected_hand = index
+		selected_board = -1
+		_render()
+		return
+	if _can_act(0):
+		selected_hand = index
+		selected_board = -1
+		attack_targeting = -1
+		ability_targeting = false
+		retreat_targeting = false
+		_render()
 
 func _board_card(side_index: int, index: int, unit: Dictionary, rect: Rect2) -> void:
 	if unit.is_empty(): return
@@ -557,6 +682,27 @@ func _battle_actions() -> void:
 	_panel(root_ui,Rect2(1110,139,290,710),PANEL,Color("#35415a"),10)
 	var me: Dictionary = sides[0]
 	if selected_board >= me.bench.size(): selected_board = -1
+	if opening_active_pending:
+		_text(root_ui,"SET YOUR ACTIVE",Rect2(1131,157,248,30),19,GOLD,DISPLAY)
+		_text(root_ui,"Choose one Normal or standalone SURGE fighter from your starting hand. Your rival has already chosen.",Rect2(1132,212,246,82),13,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		if selected_hand >= 0 and selected_hand < me.hand.size():
+			var candidate: Dictionary = me.hand[selected_hand]
+			var eligible: bool = DB.is_basic(candidate)
+			_text(root_ui,str(candidate.name),Rect2(1131,320,246,50),17,CREAM,DISPLAY)
+			_text(root_ui,"NORMAL / STANDALONE SURGE" if eligible else "BOOST-ONLY SURGE CANNOT START",Rect2(1132,376,246,34),11,GOLD if eligible else RED,MEDIUM,HORIZONTAL_ALIGNMENT_LEFT,true)
+			_button(root_ui,"SET AS ACTIVE",Rect2(1132,438,245,48),func(): _choose_opening_active(0,selected_hand),eligible,13)
+		else:
+			_text(root_ui,"Click a fighter card in your starting hand to choose it.",Rect2(1132,346,246,61),13,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		return
+	if pending_replacement_side == 0:
+		_text(root_ui,"CHOOSE NEXT ACTIVE",Rect2(1131,157,248,30),18,GOLD,DISPLAY)
+		_text(root_ui,"Your Active Fighter was Knocked Out. Choose a fighter from your Bench to continue the duel.",Rect2(1132,212,246,94),13,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_text(root_ui,"Click one of the highlighted cards in your Bench.",Rect2(1132,332,246,58),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		return
+	if not battle_started:
+		_text(root_ui,"DUEL SETUP",Rect2(1131,157,248,30),19,GOLD,DISPLAY)
+		_text(root_ui,"The starting coin is resolving. Your first turn begins after the opening choice.",Rect2(1132,212,246,90),13,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		return
 	_text(root_ui,"YOUR TURN" if current_side==0 else "RIVAL'S TURN",Rect2(1131,157,248,30),20,GOLD if current_side==0 else RED,DISPLAY)
 	_text(root_ui,"Resolving…" if busy else "Attacking ends your turn.",Rect2(1132,195,250,24),12,MUTED)
 	if retreat_targeting and not me.active.is_empty():
@@ -580,10 +726,11 @@ func _battle_actions() -> void:
 			for j in range(targets.size()):
 				var target_index: int = targets[j]
 				var ready: bool = _boost_ready(0,target_index)
-				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1))+("" if ready else "  •  NEXT TURN"),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),ready,12 if ready else 10)
+				var wait_text := "SECOND TURN REQUIRED" if int(me.get("turns_taken",0))<2 else "NEXT TURN"
+				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1))+(("" if ready else "  •  "+wait_text)),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),ready,11 if ready else 9)
 				boost_button.disabled = not _can_act(0) or not ready
 			if not targets.is_empty() and not _boost_ready(0,int(targets[0])) and targets.size()==1:
-				_text(root_ui,"A fighter can't Boost on the turn it was played.",Rect2(1132,512,245,36),11,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+				_text(root_ui,"Paired SURGE forms unlock on your second turn and cannot Boost on the Normal's play turn.",Rect2(1132,512,245,45),10,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 		else:
 			var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
 			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
@@ -634,7 +781,7 @@ func _battle_actions() -> void:
 	_button(root_ui,"PAUSE / LEAVE",Rect2(1130,798,247,33),_pause_menu,false,10)
 
 func _can_act(side: int) -> bool:
-	return screen_name=="battle" and current_side==side and not busy and not battle_over and not paused
+	return screen_name=="battle" and battle_started and not opening_active_pending and pending_replacement_side<0 and current_side==side and not busy and not battle_over and not paused
 
 func _ability_ready(side_index: int, unit_index: int) -> bool:
 	if side_index<0 or side_index>=sides.size(): return false
@@ -1088,19 +1235,61 @@ func _knockout_check(defender: int) -> void:
 	if not side.active.is_empty() and int(side.active.current_hp)<=0:
 		_defeat(defender,side.active)
 		side.active={}
-		if not side.bench.is_empty(): side.active=side.bench.pop_front()
+		if sides[1-defender].points >= 3:
+			_finish_battle(1-defender)
+			return
+		if not side.bench.is_empty():
+			if defender == 0:
+				pending_replacement_side = defender
+				notice = "Choose a fighter from your Bench to replace your Active."
+				_log("Choose which benched fighter becomes your Active Fighter.")
+			else:
+				_choose_ai_replacement(defender)
 		else:
 			for i in range(side.hand.size()):
 				if DB.is_basic(side.hand[i]):
 					side.active=side.hand[i]
 					side.hand.remove_at(i)
 					break
-	if sides[1-defender].points>=3 or side.active.is_empty():
+	if sides[1-defender].points>=3 or (side.active.is_empty() and side.bench.is_empty()):
 		_finish_battle(1-defender)
+
+func _choose_ai_replacement(side_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	if side.bench.is_empty(): return
+	var best_index := 0
+	var best_score: int = int(side.bench[0].current_hp)+side.bench[0].energy.size()*5
+	for i in range(1,side.bench.size()):
+		var score: int = int(side.bench[i].current_hp)+side.bench[i].energy.size()*5
+		if score > best_score:
+			best_score = score
+			best_index = i
+	side.active = side.bench.pop_at(best_index)
+	_log("Your rival chooses %s from the Bench as their new Active Fighter." % side.active.name)
+
+func _choose_replacement(side_index: int, bench_index: int) -> bool:
+	if pending_replacement_side != side_index or side_index < 0 or side_index >= sides.size(): return false
+	var side: Dictionary = sides[side_index]
+	if bench_index < 0 or bench_index >= side.bench.size(): return false
+	side.active = side.bench.pop_at(bench_index)
+	pending_replacement_side = -1
+	notice = "Active Fighter replaced."
+	_log("You choose %s from the Bench as your new Active Fighter." % side.active.name)
+	if pending_begin_turn == side_index:
+		pending_begin_turn = -1
+		_complete_turn_start(side_index)
+	if pending_turn_advance >= 0:
+		pending_turn_advance = -1
+		_finish_turn()
+	_render()
+	return true
 
 func _finish_battle(winner: int) -> void:
 	if battle_over: return
 	battle_over=true
+	pending_replacement_side = -1
+	pending_begin_turn = -1
+	pending_turn_advance = -1
 	matches+=1
 	if winner==0: wins+=1
 	_save()
@@ -1175,6 +1364,11 @@ func _end_turn_requested() -> void:
 	_finish_turn()
 
 func _finish_turn() -> void:
+	if pending_replacement_side == 0:
+		pending_turn_advance = current_side
+		busy = false
+		_render()
+		return
 	var token := generation
 	_log("Your turn ends." if current_side==0 else "Rival's turn ends.")
 	ability_targeting = false
@@ -1292,9 +1486,11 @@ func _poison_bonus(victim_side: int) -> int:
 	return 0
 
 func _targeting() -> bool:
-	return ability_targeting or attack_targeting >= 0 or retreat_targeting
+	return ability_targeting or attack_targeting >= 0 or retreat_targeting or pending_replacement_side >= 0
 
 func _is_target_option(side_index: int, index: int) -> bool:
+	if pending_replacement_side >= 0:
+		return side_index == pending_replacement_side and side_index == 0 and index >= 0 and index < sides[side_index].bench.size()
 	if retreat_targeting: return side_index == 0 and index >= 0 and index < sides[0].bench.size()
 	if side_index != 1: return false
 	if attack_targeting >= 0: return _attack_target_options(0).has(index)
@@ -1302,6 +1498,9 @@ func _is_target_option(side_index: int, index: int) -> bool:
 	return false
 
 func _board_clicked(side_index: int, index: int) -> void:
+	if pending_replacement_side >= 0:
+		if _is_target_option(side_index,index): _choose_replacement(side_index,index)
+		return
 	# Opponent fighters in play can be inspected at any time unless you are choosing a target.
 	if side_index == 1 and not _targeting() and screen_name == "battle":
 		var foe: Dictionary = sides[1]
@@ -1362,6 +1561,7 @@ func _boost_ready(side_index: int, target_index: int) -> bool:
 	if target_index >= side.bench.size(): return false
 	var base: Dictionary = side.active if target_index<0 else side.bench[target_index]
 	if base.is_empty(): return false
+	if int(side.get("turns_taken",0)) < 2: return false
 	if bool(base.get("boost_now",false)): return true
 	return int(base.get("played_turn",0)) < turn_number
 func _boost(side_index: int, hand_index: int, target_index: int) -> bool:
@@ -1451,7 +1651,7 @@ func _result_modal() -> void:
 func _rules() -> void:
 	var box := _modal_box(Rect2(379,94,835,726))
 	_text(box,"THE WAY OF THE BLADE",Rect2(35,30,765,47),29,CREAM,DISPLAY)
-	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one active fighter and exactly three bench spots. A coin flip decides who goes first, and no Energy can be attached on the duel's first turn. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. A fighter can't Boost on the turn it was played unless a card effect says otherwise. Standalone SURGE cards (with no Normal version) are played straight to the bench.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn: discard Energy from your active fighter (Normal 1, SURGE 2) and switch it with a benched fighter.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
+	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one Active Fighter and exactly three bench spots. A Nichirin coin flip decides who goes first. Before the first turn begins, you choose a Normal or standalone SURGE fighter from your starting hand for your Active spot; your rival chooses their own. No Energy can be attached on the duel's first turn. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. You can Boost a paired SURGE only from your second turn onward, and not on the turn its Normal was played unless a card effect explicitly permits it. Standalone SURGE cards (with no Normal version) may be played normally, even on the first turn.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn: discard Energy from your active fighter (Normal 1, SURGE 2) and switch it with a benched fighter. When an Active Fighter is Knocked Out, its owner chooses a fighter from their Bench to replace it; the rival AI makes its own choice.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
 	_text(box,rules,Rect2(37,92,760,560),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	_button(box,"DRAW YOUR BLADE",Rect2(35,660,765,43),_close_modal,true,13)
 

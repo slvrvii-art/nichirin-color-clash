@@ -18,10 +18,17 @@ Save deck/presentation preferences and match records locally through the atomic 
 
 Implement utility selection in the shared battle controller so player and AI effects resolve legally. Corps Intelligence makes the opponent choose (or the local AI choose) a replacement Active Fighter from their Bench. Urokodaki's Lesson selects a Blue fighter in play and flips until tails, attaching one Blue Energy per heads. Ubuyashiki's Guidance draws 2. Kasugai Crow's Message is an Item that fetches a random Normal or standalone fighter from the deck. Hisa's Care clears statuses from the active fighter. Kakushi Retrieval is an Item: select a Fighter in hand, exchange it with a random Fighter from the deck and shuffle the deck. Swordsmith's Gift reveals the top deck card and lets the player keep the order or shuffle; the AI makes a deterministic legal choice. Remove Final Selection, Total Concentration, Butterfly Mansion and Hashira Training, then update deck recovery, catalog counts and tests.
 
+## Setup and active-fighter transitions
+
+After both shuffled opening hands are dealt, each side must start with an eligible Normal or standalone SURGE fighter chosen from that hand. The player chooses through the battle UI; the AI chooses from its own hand. Do not begin the first turn until the player confirms. If active damage Knocks Out a fighter while its controller has bench cards, prompt that controller to choose the replacement; resolve the AI's choice automatically and defer turn advancement until a human replacement is selected. Keep existing hand fallback and terminal conditions when no bench fighter can replace a knockout. Track own turns per side: paired SURGE Boosts require at least the owner's second turn and cannot happen on the Normal's play turn except for an explicit same-turn card-effect override; standalone SURGE cards remain normally playable.
+
+Route every coin result through the shared coin helper and display each with a queued, brief Nichirin/sun-crest flip overlay. Use the same coin for random first-player selection; separate outcome calculation from presentation so tests and game logic remain deterministic, and respect reduced-motion settings.
+
 ## Project structure
 
 - `scripts/card_game.gd`: hub, collection, deck builder, battle state, AI, card plays, turns, statuses, targeting, animations, persistence and UI.
 - `scripts/card_database.gd`: current 39 fighter cards, 4 Support cards, 8 Item cards, their effects, starter decks and compatibility mapping.
+- `scripts/coin_flip_animation.gd`: non-blocking, queued, reduced-motion-aware Nichirin coin animation and Heads/Tails display.
 - `scripts/battle_layout.gd`: board geometry and safe-canvas placement.
 - `scripts/card_face.gd`: Fighter/Support/Item face presentation, Normal/SURGE markers and selectable artwork.
 - `assets/interface/attack_slash_frames.tres` plus supplied GIF-derived frames: one-shot attack animation; untouched source under `source-art/`.
