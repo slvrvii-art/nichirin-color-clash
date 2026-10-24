@@ -9,7 +9,157 @@ var data: Dictionary = {}
 var full_art := false
 var compact := false
 var face_size := Vector2(200,292)
-static var texture_cache := {}
+static var texture_cache: Dictionary = {}
+static var _texture_lru: Array[String] = []
+static var _pending_textures: Dictionary = {}
+static var _texture_waiters: Dictionary = {}
+static var _failed_textures: Dictionary = {}
+static var _ui_node_pools: Dictionary = {}
+static var _pooled_ui_node_count := 0
+const MAX_CACHED_TEXTURES := 24
+const MAX_POOLED_UI_NODES := 512
+
+static func acquire_ui_node(kind: String, script_resource: Script = null) -> Control:
+	var node: Control
+	var pool: Array = _ui_node_pools.get(kind, [])
+	if not pool.is_empty():
+		node = pool.pop_back() as Control
+		_pooled_ui_node_count = maxi(0, _pooled_ui_node_count - 1)
+		_ui_node_pools[kind] = pool
+	else:
+		match kind:
+			"Control": node = Control.new()
+			"ColorRect": node = ColorRect.new()
+			"LineEdit": node = LineEdit.new()
+			"ScrollContainer": node = ScrollContainer.new()
+			"VBoxContainer": node = VBoxContainer.new()
+			"Button": node = Button.new()
+			"Panel": node = Panel.new()
+			"Label": node = Label.new()
+			"TextureRect": node = TextureRect.new()
+			"OptionButton": node = OptionButton.new()
+			"CardFace":
+				if script_resource == null:
+					push_error("CardFace pool requires its script resource.")
+					return null
+				node = script_resource.new() as Control
+			_:
+				push_error("Unsupported pooled UI node type: %s" % kind)
+				return null
+	_reset_control(node)
+	return node
+
+static func recycle_children(parent: Control) -> void:
+	for child in parent.get_children().duplicate():
+		parent.remove_child(child)
+		if child is Control:
+			recycle_tree(child as Control)
+		else:
+			child.queue_free()
+
+static func recycle_tree(control: Control) -> void:
+	recycle_children(control)
+	_reset_control(control)
+	var kind := _pool_kind(control)
+	if _pooled_ui_node_count >= MAX_POOLED_UI_NODES:
+		control.free()
+		return
+	var pool: Array = _ui_node_pools.get(kind, [])
+	pool.append(control)
+	_ui_node_pools[kind] = pool
+	_pooled_ui_node_count += 1
+
+static func clear_runtime_caches() -> void:
+	for pool_value in _ui_node_pools.values():
+		for pooled_value in pool_value:
+			var pooled_node := pooled_value as Control
+			if is_instance_valid(pooled_node) and pooled_node.get_parent() == null:
+				pooled_node.free()
+	_ui_node_pools.clear()
+	_pooled_ui_node_count = 0
+	texture_cache.clear()
+	_texture_lru.clear()
+	_pending_textures.clear()
+	_texture_waiters.clear()
+	_failed_textures.clear()
+
+static func _pool_kind(control: Control) -> String:
+	var script_resource := control.get_script() as Script
+	if script_resource != null and script_resource.resource_path == "res://scripts/card_face.gd":
+		return "CardFace"
+	return control.get_class()
+
+static func _reset_control(control: Control) -> void:
+	for signal_info in control.get_signal_list():
+		var signal_name := StringName(signal_info.get("name", ""))
+		for connection in control.get_signal_connection_list(signal_name):
+			var callback: Callable = connection.get("callable", Callable())
+			if control.is_connected(signal_name, callback):
+				control.disconnect(signal_name, callback)
+	control.position = Vector2.ZERO
+	control.size = Vector2.ZERO
+	control.custom_minimum_size = Vector2.ZERO
+	control.pivot_offset = Vector2.ZERO
+	control.scale = Vector2.ONE
+	control.rotation = 0.0
+	control.modulate = Color.WHITE
+	control.self_modulate = Color.WHITE
+	control.visible = true
+	control.z_index = 0
+	control.mouse_filter = Control.MOUSE_FILTER_STOP
+	control.mouse_default_cursor_shape = Control.CURSOR_ARROW
+	control.focus_mode = Control.FOCUS_NONE
+	control.clip_contents = control is ScrollContainer
+	control.tooltip_text = ""
+	control.material = null
+	control.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	for style_name in ["normal", "hover", "pressed", "disabled", "focus", "panel"]:
+		control.remove_theme_stylebox_override(style_name)
+	for color_name in ["font_color", "font_disabled_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_outline_color", "font_shadow_color"]:
+		control.remove_theme_color_override(color_name)
+	control.remove_theme_font_override("font")
+	control.remove_theme_font_size_override("font_size")
+	for constant_name in ["outline_size", "shadow_offset_x", "shadow_offset_y", "separation"]:
+		control.remove_theme_constant_override(constant_name)
+	if control is Button:
+		var button := control as Button
+		button.text = ""
+		button.disabled = false
+		button.toggle_mode = false
+		button.set_pressed_no_signal(false)
+	elif control is Label:
+		var label := control as Label
+		label.text = ""
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.clip_text = false
+	elif control is TextureRect:
+		(control as TextureRect).texture = null
+	elif control is LineEdit:
+		var line_edit := control as LineEdit
+		line_edit.clear()
+		line_edit.placeholder_text = ""
+		line_edit.editable = true
+	elif control is OptionButton:
+		var option := control as OptionButton
+		option.clear()
+		option.select(-1)
+	elif control is ScrollContainer:
+		var scroll := control as ScrollContainer
+		scroll.scroll_horizontal = 0
+		scroll.scroll_vertical = 0
+	if control.has_meta("nichirin_texture_path"):
+		control.remove_meta("nichirin_texture_path")
+	if script_resource_is_card_face(control):
+		control.set("data", {})
+		control.set("full_art", false)
+		control.set("compact", false)
+		control.set("face_size", Vector2.ZERO)
+
+static func script_resource_is_card_face(control: Control) -> bool:
+	var script_resource := control.get_script() as Script
+	return script_resource != null and script_resource.resource_path == "res://scripts/card_face.gd"
 
 # SURGE cards always use full art; Normal fighters and utility cards use basic art.
 func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = false) -> void:
@@ -37,10 +187,9 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 	var h := dimensions.y
 	var s := w/200.0
 	var art_path: String = "res://assets/support/"+str(data.art)+".png" if data.kind in ["Support","Item"] else "res://assets/fighters/"+str(data.get("art_file",data.art))+".png"
-	var art_texture := texture(art_path)
 	if full_art:
-		var image := TextureRect.new()
-		image.texture = art_texture
+		var image := acquire_ui_node("TextureRect") as TextureRect
+		image.texture = texture(art_path,image)
 		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		image.position = Vector2(3,3)
@@ -51,8 +200,8 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		# Basic art fits entirely inside its window: a dimmed fill behind, the whole picture in front.
 		var window_pos := Vector2(4,48*s)
 		var window_size := Vector2(w-8,h*0.65-48*s)
-		var backdrop := TextureRect.new()
-		backdrop.texture = art_texture
+		var backdrop := acquire_ui_node("TextureRect") as TextureRect
+		backdrop.texture = texture(art_path,backdrop)
 		backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		backdrop.position = window_pos
@@ -60,8 +209,8 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		backdrop.modulate = Color(0.32,0.34,0.4)
 		backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(backdrop)
-		var image := TextureRect.new()
-		image.texture = art_texture
+		var image := acquire_ui_node("TextureRect") as TextureRect
+		image.texture = texture(art_path,image)
 		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		image.position = window_pos+Vector2(0,2*s)
@@ -70,7 +219,7 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		add_child(image)
 	# Full-art SURGE cards have no dark bands; their text carries an outline instead.
 	if not full_art:
-		var header := ColorRect.new()
+		var header := acquire_ui_node("ColorRect") as ColorRect
 		header.color = Color(0.025,0.045,0.075,0.85)
 		header.position = Vector2(4,4)
 		header.size = Vector2(w-8,44*s)
@@ -86,7 +235,7 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 	if full_art:
 		surge_label(Vector2(w*0.5,27*s),Vector2(w*0.5-10*s,18*s),12.5*s)
 	if not full_art:
-		var bottom := ColorRect.new()
+		var bottom := acquire_ui_node("ColorRect") as ColorRect
 		bottom.color = Color(0.025,0.045,0.075,1.0)
 		bottom.position = Vector2(4,h*0.65)
 		bottom.size = Vector2(w-8,h*0.35-4)
@@ -102,7 +251,7 @@ func setup(card: Dictionary, _artwork: bool, dimensions: Vector2, small: bool = 
 		var pips: int = int(data.get("retreat_cost",2 if full_art else 1))
 		var pip_d: float = maxf(5.0,7*s)
 		for i in range(pips):
-			var pip := Panel.new()
+			var pip := acquire_ui_node("Panel") as Panel
 			var ps := StyleBoxFlat.new()
 			ps.bg_color = Color("#d9dde6")
 			ps.border_color = Color("#3a4559")
@@ -151,17 +300,91 @@ func surge_label(pos: Vector2, dims: Vector2, font_size: float) -> Label:
 	label.name = "SurgeWordmark"
 	return label
 
-static func texture(path: String) -> Texture2D:
+static func texture(path: String, target: TextureRect = null) -> Texture2D:
+	if path.is_empty():
+		return null
+	if target != null:
+		target.set_meta("nichirin_texture_path",path)
 	if texture_cache.has(path):
-		return texture_cache[path]
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		texture_cache[path] = tex
-		return tex
+		_touch_texture(path)
+		var cached := texture_cache[path] as Texture2D
+		if target != null:
+			target.texture = cached
+		return cached
+	if _failed_textures.has(path):
+		return null
+	if not ResourceLoader.exists(path):
+		_failed_textures[path] = true
+		push_warning("Card artwork is missing: %s" % path)
+		return null
+	if not _pending_textures.has(path):
+		var status := ResourceLoader.load_threaded_get_status(path)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			var loaded := ResourceLoader.load_threaded_get(path) as Texture2D
+			if loaded != null:
+				_cache_texture(path,loaded)
+				if target != null:
+					target.texture = loaded
+				return loaded
+			_failed_textures[path] = true
+			return null
+		if status != ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			var request_error := ResourceLoader.load_threaded_request(path)
+			if request_error != OK:
+				status = ResourceLoader.load_threaded_get_status(path)
+				if status != ResourceLoader.THREAD_LOAD_IN_PROGRESS and status != ResourceLoader.THREAD_LOAD_LOADED:
+					_failed_textures[path] = true
+					push_warning("Could not start threaded card-art loading for %s (error %d)." % [path,request_error])
+					return null
+		_pending_textures[path] = true
+	if target != null:
+		var waiters: Dictionary = _texture_waiters.get(path,{})
+		waiters[target.get_instance_id()] = weakref(target)
+		_texture_waiters[path] = waiters
 	return null
 
+static func has_pending_textures() -> bool:
+	return not _pending_textures.is_empty()
+
+static func poll_pending_textures() -> bool:
+	for path in _pending_textures.keys():
+		var status := ResourceLoader.load_threaded_get_status(path)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			var loaded := ResourceLoader.load_threaded_get(path) as Texture2D
+			_pending_textures.erase(path)
+			if loaded == null:
+				_failed_textures[path] = true
+				_texture_waiters.erase(path)
+				push_warning("Threaded card-art loading returned no texture for %s." % path)
+				continue
+			_cache_texture(path,loaded)
+			var waiters: Dictionary = _texture_waiters.get(path,{})
+			for reference in waiters.values():
+				var target := (reference as WeakRef).get_ref() as TextureRect
+				if is_instance_valid(target) and target.has_meta("nichirin_texture_path") and str(target.get_meta("nichirin_texture_path")) == path:
+					target.texture = loaded
+			_texture_waiters.erase(path)
+		elif status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			_pending_textures.erase(path)
+			_texture_waiters.erase(path)
+			_failed_textures[path] = true
+			push_warning("Threaded card-art loading failed for %s." % path)
+	return has_pending_textures()
+
+static func _cache_texture(path: String, loaded: Texture2D) -> void:
+	texture_cache[path] = loaded
+	_touch_texture(path)
+	while texture_cache.size() > MAX_CACHED_TEXTURES and not _texture_lru.is_empty():
+		var oldest: String = _texture_lru.pop_front()
+		if oldest != path:
+			texture_cache.erase(oldest)
+
+static func _touch_texture(path: String) -> void:
+	_texture_lru.erase(path)
+	_texture_lru.append(path)
+
 func label_at(value: String, pos: Vector2, dims: Vector2, font_size: float, tint: Color, font: Font = BODY, wrap: bool = false) -> Label:
-	var label := Label.new()
+	var label := acquire_ui_node("Label") as Label
 	label.text = value
 	label.position = pos
 	label.add_theme_font_override("font",font)

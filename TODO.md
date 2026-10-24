@@ -65,4 +65,10 @@
 - [x] When an Active Fighter is Knocked Out and its player has benched fighters, let that player choose which benched fighter becomes Active; the AI chooses its own replacement.
 - [x] A paired SURGE card can be Boosted only from its owner's second turn onward, and never on the turn its Normal fighter entered play, except where an existing explicit card effect overrides the same-turn restriction. Standalone SURGE cards remain directly playable.
 - [x] Update the in-game turn guidance and verify random setup, both replacement paths, all coin-flip call sites, and Boost timing.
-- [ ] Updated delivery: Prepare the release pack, push and confirm the corresponding canonical checkpoint, then verify publication.
+- [x] Updated delivery: Checkpoint `4fc23d5983a12092f8df061884540b249b175950` passed smoke, AI-match, managed and pack checks; it is published at [Nichirin: Color Clash](https://nichirin-eakw5bhv.manus.game).
+
+## UI and asset performance refactor
+- [x] Reuse the game UI root and pooled control/card-face nodes across renders; reset old state and signal connections so reused nodes show current data and do not trigger stale callbacks.
+- [x] Start card-image loading with `ResourceLoader.load_threaded_request()`; deduplicate requests, update only still-matching live image nodes after completion, and avoid synchronous card-art loading during rendering.
+- [x] Bound asynchronous image polling/cache work so it runs only while requests are pending and does not cause unbounded texture memory growth.
+- [x] Remove eager preloads of unused legacy card-game art from `card_database.gd` while preserving legacy compatibility only if still referenced. Keep the required controller-script resource in `card_game.tscn`; remove no active scene dependency.

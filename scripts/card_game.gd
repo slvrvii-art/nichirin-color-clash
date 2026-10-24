@@ -24,6 +24,7 @@ const SAVE_PATH := "user://nichirin_collection_v1.json"
 var screen_name := "home"
 var root_ui: Control
 var modal: Control
+var texture_poll_timer: Timer
 var catalog: Array[Dictionary] = []
 var cards_by_id := {}
 var deck: Array = []
@@ -85,10 +86,35 @@ func _ready() -> void:
 	coin_overlay = COIN_UI.new()
 	coin_overlay.layer = 40
 	add_child(coin_overlay)
+	texture_poll_timer = Timer.new()
+	texture_poll_timer.one_shot = true
+	texture_poll_timer.wait_time = 0.05
+	texture_poll_timer.timeout.connect(_poll_card_textures)
+	add_child(texture_poll_timer)
 	catalog = DB.catalog()
 	for card in catalog: cards_by_id[card.id] = card
 	_load_save()
 	_render()
+
+func _exit_tree() -> void:
+	if is_instance_valid(texture_poll_timer):
+		texture_poll_timer.stop()
+	if is_instance_valid(modal):
+		if modal.get_parent() != null:
+			modal.get_parent().remove_child(modal)
+		FACE.recycle_tree(modal)
+		modal = null
+	if is_instance_valid(root_ui):
+		FACE.recycle_children(root_ui)
+	FACE.clear_runtime_caches()
+
+func _start_texture_poll() -> void:
+	if FACE.has_pending_textures() and texture_poll_timer.is_stopped():
+		texture_poll_timer.start()
+
+func _poll_card_textures() -> void:
+	if FACE.poll_pending_textures():
+		texture_poll_timer.start()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
@@ -147,13 +173,14 @@ func _go(screen: String) -> void:
 
 func _render() -> void:
 	if is_instance_valid(root_ui):
-		remove_child(root_ui)
-		root_ui.queue_free()
-	root_ui = Control.new()
+		FACE.recycle_children(root_ui)
+	else:
+		root_ui = FACE.acquire_ui_node("Control")
+		add_child(root_ui)
 	root_ui.size = Vector2(1440,900)
-	add_child(root_ui)
+	root_ui.visible = true
 	board_nodes.clear()
-	var bg := ColorRect.new()
+	var bg := FACE.acquire_ui_node("ColorRect") as ColorRect
 	bg.color = INK
 	bg.size = Vector2(1440,900)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -238,7 +265,7 @@ func _filtered() -> Array[Dictionary]:
 func _collection() -> void:
 	var building: bool = screen_name == "deck"
 	_header("DECK BUILDER" if building else "CARD COLLECTION","A 20-card limit. Countless ways to draw your blade." if building else "Browse all %d cards. Normal fighters Boost into their full-art SURGE forms." % catalog.size())
-	var search := LineEdit.new()
+	var search := FACE.acquire_ui_node("LineEdit") as LineEdit
 	search.position = Vector2(155,140)
 	search.size = Vector2(283,43)
 	search.placeholder_text = "Search characters, forms, effects…"
@@ -277,11 +304,11 @@ func _deck_panel() -> void:
 	_text(root_ui,"YOUR DECK",Rect2(1102,156,272,29),21,CREAM,DISPLAY)
 	_text(root_ui,"%d / 20 CARDS" % deck.size(),Rect2(1103,199,273,26),17,GOLD)
 	_text(root_ui,"Two copies per catalog card.",Rect2(1104,230,260,22),11,MUTED)
-	var scroll := ScrollContainer.new()
+	var scroll := FACE.acquire_ui_node("ScrollContainer") as ScrollContainer
 	scroll.position = Vector2(1100,267)
 	scroll.size = Vector2(280,419)
 	root_ui.add_child(scroll)
-	var list := VBoxContainer.new()
+	var list := FACE.acquire_ui_node("VBoxContainer") as VBoxContainer
 	list.custom_minimum_size.x = 265
 	list.add_theme_constant_override("separation",4)
 	scroll.add_child(list)
@@ -289,7 +316,7 @@ func _deck_panel() -> void:
 	for id in deck: counts[id]=counts.get(id,0)+1
 	for id in counts:
 		var card: Dictionary = cards_by_id[id]
-		var row := Button.new()
+		var row := FACE.acquire_ui_node("Button") as Button
 		row.text = "%d×  %s\n%s     − REMOVE" % [counts[id],card.name,card.form]
 		row.custom_minimum_size = Vector2(264,48)
 		row.add_theme_font_size_override("font_size",11)
@@ -1675,11 +1702,11 @@ func _pause_menu() -> void:
 
 func _modal_box(rect: Rect2) -> Control:
 	_close_modal()
-	modal=Control.new()
+	modal=FACE.acquire_ui_node("Control")
 	modal.size=Vector2(1440,900)
 	modal.z_index=100
 	add_child(modal)
-	var dim := ColorRect.new()
+	var dim := FACE.acquire_ui_node("ColorRect") as ColorRect
 	dim.color=Color(0.015,0.025,0.04,0.87)
 	dim.size=Vector2(1440,900)
 	modal.add_child(dim)
@@ -1687,8 +1714,9 @@ func _modal_box(rect: Rect2) -> Control:
 
 func _close_modal() -> void:
 	if is_instance_valid(modal):
-		remove_child(modal)
-		modal.queue_free()
+		if modal.get_parent() != null:
+			modal.get_parent().remove_child(modal)
+		FACE.recycle_tree(modal)
 	modal=null
 	paused=false
 
@@ -1696,16 +1724,17 @@ func _art_for(id: String) -> bool:
 	return bool(cards_by_id.get(id,{}).get("surge",false))
 
 func _card(parent: Control, card: Dictionary, rect: Rect2, action: Callable, small: bool = false) -> Control:
-	var face := FACE.new()
+	var face := FACE.acquire_ui_node("CardFace",FACE) as NichirinCardFace
 	face.position=rect.position
 	face.setup(card,_art_for(str(card.id)),rect.size,small)
 	if action.is_valid(): face.pressed.connect(action)
 	else: face.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	parent.add_child(face)
+	_start_texture_poll()
 	return face
 
 func _panel(parent: Control, rect: Rect2, fill: Color, border: Color = Color("#303c50"), radius: int = 8) -> Panel:
-	var panel := Panel.new()
+	var panel := FACE.acquire_ui_node("Panel") as Panel
 	panel.position=rect.position
 	panel.size=rect.size
 	var style := StyleBoxFlat.new()
@@ -1719,7 +1748,7 @@ func _panel(parent: Control, rect: Rect2, fill: Color, border: Color = Color("#3
 	return panel
 
 func _text(parent: Control, value: String, rect: Rect2, font_size: int, tint: Color = CREAM, font: Font = BODY, alignment: HorizontalAlignment = HORIZONTAL_ALIGNMENT_LEFT, wrap: bool = false) -> Label:
-	var label := Label.new()
+	var label := FACE.acquire_ui_node("Label") as Label
 	label.text=value
 	label.position=rect.position
 	label.horizontal_alignment=alignment
@@ -1736,7 +1765,7 @@ func _text(parent: Control, value: String, rect: Rect2, font_size: int, tint: Co
 	return label
 
 func _button(parent: Control, value: String, rect: Rect2, action: Callable, primary: bool = false, font_size: int = 14) -> Button:
-	var button := Button.new()
+	var button := FACE.acquire_ui_node("Button") as Button
 	button.text=value
 	button.position=rect.position
 	button.size=rect.size
@@ -1758,19 +1787,20 @@ func _button(parent: Control, value: String, rect: Rect2, action: Callable, prim
 	return button
 
 func _image(parent: Control, path: String, rect: Rect2, tint: Color = Color.WHITE) -> TextureRect:
-	var image := TextureRect.new()
+	var image := FACE.acquire_ui_node("TextureRect") as TextureRect
 	image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	image.texture=FACE.texture(path)
+	image.texture=FACE.texture(path,image)
 	image.position=rect.position
 	image.size=rect.size
 	image.modulate=tint
 	image.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	parent.add_child(image)
+	_start_texture_poll()
 	return image
 
 func _option(parent: Control, values: Array, selected: String, rect: Rect2, action: Callable) -> void:
-	var option := OptionButton.new()
+	var option := FACE.acquire_ui_node("OptionButton") as OptionButton
 	option.position=rect.position
 	option.size=rect.size
 	option.add_theme_font_size_override("font_size",13)
