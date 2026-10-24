@@ -128,28 +128,24 @@ const SPECIAL_FIGHTERS := [
 			{"name":"Clear Blue Sky","damage":130,"cost":4,"color_cost":4,"effect":"discard_all_energy"}]}
 ]
 
-# Curated utility set: 10 Support cards (one per turn) and 6 Item cards (any number per turn).
+# Curated utility set: 4 Support cards (one per turn) and 8 Item cards (any number per turn).
 # Each entry: [id, name, effect, value, art, kind]. Original IDs are kept so saved decks still load.
 const UTILITIES := [
-	["support_1","Butterfly Mansion","team_heal_cleanse",20,"healing","Support"],
-	["support_5","Wisteria Sanctuary","bench_heal",40,"healing","Support"],
-	["support_6","Urokodaki's Lesson","draw",2,"training","Support"],
-	["support_7","Kasugai Crow","draw_until",5,"training","Support"],
-	["support_8","Final Selection","draw",3,"training","Support"],
+	["support_5","Hisa's Care","remove_status",0,"healing","Support"],
+	["support_6","Urokodaki's Lesson","blue_energy_loop",0,"training","Support"],
 	["support_10","Corps Intelligence","foe_switch",0,"training","Support"],
-	["support_11","Ubuyashiki's Guidance","cleanse_draw",2,"healing","Support"],
-	["support_12","Total Concentration","boost",20,"training","Support"],
-	["support_13","Hashira Training","boost",40,"training","Support"],
-	["support_18","Kakushi Retrieval","retreat_free",0,"healing","Support"],
+	["support_11","Ubuyashiki's Guidance","draw",2,"healing","Support"],
 	["support_2","Recovery Breathing","coin_energy",0,"healing","Item"],
 	["support_3","Tamayo's Remedy","heal",20,"healing","Item"],
-	["support_9","Swordsmith's Gift","draw",1,"training","Item"],
+	["support_7","Kasugai Crow's Message","random_basic",0,"training","Item"],
+	["support_9","Swordsmith's Gift","peek_shuffle",0,"training","Item"],
 	["support_15","Unwavering Spirit","shield",20,"healing","Item"],
+	["support_18","Kakushi Retrieval","hand_swap",0,"healing","Item"],
 	["item_01","Sunlight Charm","shuffle_draw",3,"training","Item"],
 	["item_02","Kakushi Stretcher","retreat_discount",1,"healing","Item"]
 ]
-# 39 fighter cards + 10 Supports + 6 Items.
-const TOTAL_CARDS := 55
+# 39 fighter cards + 4 Supports + 8 Items.
+const TOTAL_CARDS := 51
 
 static func catalog() -> Array[Dictionary]:
 	var cards: Array[Dictionary] = []
@@ -228,8 +224,12 @@ static func _append_utility(cards: Array[Dictionary], id: String, name: String, 
 	var fixed := {
 		"coin_energy":"Flip a coin. If heads, generate an Energy from your Energy Zone and attach it to your active fighter.",
 		"shuffle_draw":"Your opponent shuffles their hand into their deck and draws 3 cards.",
-		"remove_status":"Clear all status conditions from your active fighter.",
-		"foe_switch":"Your opponent switches their active fighter with their first benched fighter.",
+		"blue_energy_loop":"Choose one of your Blue Color Type fighters, and flip a coin until you get tails; for each heads, take a Blue Energy from your Energy Zone and attach it to that fighter.",
+		"random_basic":"Put a random Normal or standalone fighter card from your deck into your hand.",
+		"hand_swap":"Choose a fighter in your hand and switch it with a random fighter in your deck.",
+		"peek_shuffle":"Look at the top card of your deck, then you may shuffle your deck.",
+		"remove_status":"Remove all status conditions from your active fighter.",
+		"foe_switch":"Switch out your opponent’s Active Fighter to the Bench. (Your opponent chooses the new Active Fighter.)",
 		"retreat_free":"This turn, your active fighter can retreat without paying Energy.",
 		"retreat_discount":"During this turn, the retreat cost of your active fighter is 1 less."
 	}
@@ -245,10 +245,10 @@ static func is_basic(card: Dictionary) -> bool:
 	return str(card.get("kind","")) == "Fighter" and str(card.get("boost_from","")) == ""
 
 static func starter_deck() -> Array:
-	return ["tanjiro_normal","tanjiro_normal","tanjiro_surge","tanjiro_surge","giyu_normal","giyu_normal","giyu_surge","giyu_surge","murata_normal","murata_normal","tanjiro_hinokami_surge","support_2","support_2","support_9","support_9","support_1","support_6","support_10","support_12","item_01"]
+	return ["tanjiro_normal","tanjiro_normal","tanjiro_surge","tanjiro_surge","giyu_normal","giyu_normal","giyu_surge","giyu_surge","murata_normal","murata_normal","tanjiro_hinokami_surge","support_2","support_2","support_9","support_9","support_5","support_6","support_10","support_11","item_01"]
 
 static func enemy_deck() -> Array:
-	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","susamaru_normal","susamaru_normal","susamaru_surge","susamaru_surge","yahaba_normal","yahaba_normal","support_2","support_2","support_3","support_3","support_6","support_7","support_12","support_1","support_9","support_9"]
+	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","susamaru_normal","susamaru_normal","susamaru_surge","susamaru_surge","yahaba_normal","yahaba_normal","support_2","support_2","support_3","support_3","support_6","support_7","support_11","support_5","support_9","support_9"]
 
 static func find_card(id: String) -> Dictionary:
 	for card in catalog():

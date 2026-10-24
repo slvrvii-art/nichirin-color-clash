@@ -49,6 +49,7 @@ var selected_hand := -1
 var selected_board := -1
 var ability_targeting := false
 var ability_source := -2
+var pending_utility_choice: Dictionary = {}
 var battle_log: Array[String] = []
 var board_nodes := {}
 var rng := RandomNumberGenerator.new()
@@ -76,6 +77,7 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		if is_instance_valid(modal):
+			if not pending_utility_choice.is_empty(): return
 			_close_modal()
 		elif screen_name == "battle" and not battle_over:
 			_pause_menu()
@@ -112,6 +114,7 @@ func _go(screen: String) -> void:
 		busy = false
 		battle_over = true
 	paused = false
+	pending_utility_choice.clear()
 	_close_modal()
 	screen_name = screen
 	page = 0
@@ -584,7 +587,7 @@ func _battle_actions() -> void:
 		else:
 			var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
 			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
-			play.disabled = not _can_act(0) or (card.kind=="Support" and me.support_used) or (card.kind=="Fighter" and me.bench.size()>=3)
+			play.disabled = not _can_act(0) or (card.kind=="Support" and me.support_used) or (card.kind=="Fighter" and me.bench.size()>=3) or not _utility_can_play(0,selected_hand)
 		_button(root_ui,"← ACTIVE FIGHTER",Rect2(1132,664,245,38),func(): selected_hand=-1; selected_board=-1; _render(),false,11)
 	elif not me.active.is_empty():
 		var unit: Dictionary = me.active if selected_board<0 else me.bench[selected_board]
@@ -712,6 +715,7 @@ func _play_card(side_index: int, index: int) -> bool:
 	else:
 		if card.kind=="Support" and side.support_used: return false
 		if card.kind not in ["Support","Item"]: return false
+		if not _utility_can_play(side_index,index): return false
 		if card.kind=="Support": side.support_used=true
 		side.hand.remove_at(index)
 		side.discard.append(card)
@@ -745,11 +749,15 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 				_log("Heads! %s generates and attaches 1 %s Color Energy from the Energy Zone." % [side.active.short,color])
 			else:
 				_log("Tails! Recovery Breathing generates no Energy.")
+		"blue_energy_loop": _resolve_blue_energy_loop_effect(side_index)
+		"random_basic": _take_random_basic_fighter(side_index)
+		"peek_shuffle": _resolve_peek_shuffle(side_index)
+		"hand_swap": _resolve_hand_swap_effect(side_index)
 		"shuffle_draw":
 			var foe: Dictionary = sides[1-side_index]
 			foe.deck.append_array(foe.hand)
 			foe.hand.clear()
-			foe.deck.shuffle()
+			_shuffle_array(foe.deck)
 			_draw_cards(1-side_index,amount)
 			_log("Sunlight Charm: the opponent shuffles their hand into their deck and draws %d cards." % amount)
 		"boost": side.active.boost+=amount
@@ -764,15 +772,219 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 			side.active.boost+=amount
 			side.active.shield=maxi(side.active.shield,amount)
 		"foe_switch":
-			var foe: Dictionary = sides[1-side_index]
-			if not foe.active.is_empty() and not foe.bench.is_empty():
-				var moved: Dictionary = foe.active
-				for moved_status in ["Poison","Burn","Paralysis","Sleep"]: moved.get("statuses",[]).erase(moved_status)
-				foe.active = foe.bench[0]
-				foe.bench[0] = moved
-				_log("%s is pulled back; %s is forced into the active spot." % [moved.short,foe.active.short])
+			_resolve_corps_intelligence(side_index)
 		"retreat_free": side["free_retreat"] = true
 		"retreat_discount": side["retreat_discount"] = int(side.get("retreat_discount",0))+amount
+
+func _utility_can_play(side_index: int, hand_index: int) -> bool:
+	if side_index<0 or side_index>=sides.size(): return false
+	var side: Dictionary = sides[side_index]
+	if hand_index<0 or hand_index>=side.hand.size(): return false
+	var effect: String = str(side.hand[hand_index].get("effect",""))
+	match effect:
+		"blue_energy_loop": return not _blue_fighter_options(side_index).is_empty()
+		"foe_switch": return not sides[1-side_index].bench.is_empty()
+		"random_basic": return not _basic_fighter_deck_indices(side_index).is_empty()
+		"hand_swap": return not _hand_fighter_indices(side_index,hand_index).is_empty() and not _deck_fighter_indices(side_index).is_empty()
+	return true
+
+func _hand_fighter_indices(side_index: int, excluded_index: int = -1) -> Array:
+	var result: Array = []
+	if side_index<0 or side_index>=sides.size(): return result
+	var hand: Array = sides[side_index].hand
+	for i in range(hand.size()):
+		if i!=excluded_index and str(hand[i].get("kind",""))=="Fighter": result.append(i)
+	return result
+
+func _deck_fighter_indices(side_index: int) -> Array:
+	var result: Array = []
+	if side_index<0 or side_index>=sides.size(): return result
+	var side: Dictionary = sides[side_index]
+	for i in range(side.deck.size()):
+		if str(side.deck[i].get("kind",""))=="Fighter": result.append(i)
+	return result
+
+func _basic_fighter_deck_indices(side_index: int) -> Array:
+	var result: Array = []
+	if side_index<0 or side_index>=sides.size(): return result
+	var side: Dictionary = sides[side_index]
+	for i in range(side.deck.size()):
+		if DB.is_basic(side.deck[i]): result.append(i)
+	return result
+
+func _blue_fighter_options(side_index: int) -> Array:
+	var result: Array = []
+	if side_index<0 or side_index>=sides.size(): return result
+	var side: Dictionary = sides[side_index]
+	if not side.active.is_empty() and str(side.active.get("color",""))=="Blue":
+		result.append({"label":"ACTIVE  •  "+str(side.active.name),"target":-1})
+	for i in range(side.bench.size()):
+		if str(side.bench[i].get("color",""))=="Blue":
+			result.append({"label":"BENCH "+str(i+1)+"  •  "+str(side.bench[i].name),"target":i})
+	return result
+
+func _open_utility_choice(effect: String, side_index: int, title: String, description: String, options: Array, extra: Dictionary = {}) -> void:
+	if options.is_empty(): return
+	pending_utility_choice={"effect":effect,"side":side_index}
+	for key in extra: pending_utility_choice[key]=extra[key]
+	var box_height: float = minf(785.0,235.0+49.0*options.size())
+	var box_y: float = (900.0-box_height)*0.5
+	var box := _modal_box(Rect2(360,box_y,720,box_height))
+	paused=true
+	_text(box,title.to_upper(),Rect2(32,26,656,38),23,CREAM,DISPLAY)
+	_text(box,description,Rect2(32,72,656,92),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	for i in range(options.size()):
+		var option: Dictionary = options[i]
+		var callback := Callable(self,"_resolve_utility_choice").bind(option)
+		_button(box,str(option.get("label","Choose")),Rect2(32,176+i*47,656,41),callback,i==0,11)
+
+func _resolve_utility_choice(option: Dictionary) -> void:
+	if pending_utility_choice.is_empty(): return
+	var pending: Dictionary = pending_utility_choice.duplicate(true)
+	pending_utility_choice.clear()
+	var side_index: int = int(pending.get("side",-1))
+	if side_index<0 or side_index>=sides.size():
+		_close_modal()
+		return
+	match str(pending.get("effect","")):
+		"blue_energy_loop": _attach_blue_energy_until_tails(side_index,int(option.get("target",-2)))
+		"foe_switch": _switch_foe_active(side_index,int(option.get("target",-1)))
+		"hand_swap": _swap_hand_fighter_with_deck(side_index,int(option.get("hand_index",-1)))
+		"peek_shuffle":
+			if bool(option.get("shuffle",false)):
+				_shuffle_array(sides[side_index].deck)
+				_log("You shuffle your deck after looking at its top card.")
+			else:
+				_log("You keep the top card in place.")
+	_close_modal()
+	_render()
+
+func _resolve_blue_energy_loop_effect(side_index: int) -> void:
+	var options: Array = _blue_fighter_options(side_index)
+	if options.is_empty():
+		_log("Urokodaki's Lesson has no Blue fighter to target.")
+		return
+	if side_index==1:
+		var selected: Dictionary = options[0]
+		for option in options:
+			var index: int = int(option.target)
+			var unit: Dictionary = sides[1].active if index<0 else sides[1].bench[index]
+			var best_index: int = int(selected.target)
+			var best_unit: Dictionary = sides[1].active if best_index<0 else sides[1].bench[best_index]
+			if unit.energy.size()<best_unit.energy.size(): selected=option
+		_attach_blue_energy_until_tails(side_index,int(selected.target))
+	else:
+		_open_utility_choice("blue_energy_loop",side_index,"Urokodaki's Lesson","Choose one of your Blue Color Type fighters to receive Blue Energy for each heads.",options)
+
+func _attach_blue_energy_until_tails(side_index: int, target_index: int) -> void:
+	if target_index < -1 or target_index >= sides[side_index].bench.size(): return
+	var side: Dictionary = sides[side_index]
+	var target: Dictionary = side.active if target_index<0 else side.bench[target_index]
+	if str(target.get("color",""))!="Blue": return
+	var heads := 0
+	while _flip_coin():
+		target.energy.append("Blue")
+		heads+=1
+	_log("Urokodaki's Lesson: %s flips %d heads, then tails; attach %d Blue Energy." % [target.name,heads,heads])
+
+func _resolve_corps_intelligence(side_index: int) -> void:
+	var opponent: Dictionary = sides[1-side_index]
+	if opponent.bench.is_empty():
+		_log("Corps Intelligence has no benched fighter to bring forward.")
+		return
+	if side_index==0:
+		var selected := 0
+		for i in range(1,opponent.bench.size()):
+			if int(opponent.bench[i].current_hp)>int(opponent.bench[selected].current_hp): selected=i
+		_log("The rival chooses %s as the new Active Fighter." % opponent.bench[selected].name)
+		_switch_foe_active(side_index,selected)
+	else:
+		var options: Array = []
+		for i in range(sides[0].bench.size()):
+			options.append({"label":"BENCH "+str(i+1)+"  •  "+str(sides[0].bench[i].name),"target":i})
+		_open_utility_choice("foe_switch",side_index,"Corps Intelligence","The rival switches out your Active Fighter. Choose which of your benched fighters becomes Active.",options)
+
+func _switch_foe_active(effect_side: int, bench_index: int) -> void:
+	var opponent: Dictionary = sides[1-effect_side]
+	if bench_index<0 or bench_index>=opponent.bench.size(): return
+	var incoming: Dictionary = opponent.bench[bench_index]
+	var outgoing: Dictionary = opponent.active
+	if outgoing.is_empty():
+		opponent.bench.remove_at(bench_index)
+	else:
+		_clear_statuses(outgoing)
+		opponent.bench[bench_index]=outgoing
+	opponent.active=incoming
+	_log("%s switches to the Bench; %s becomes Active." % [outgoing.get("short","Active fighter"),incoming.name])
+
+func _take_random_basic_fighter(side_index: int) -> void:
+	var indices: Array = _basic_fighter_deck_indices(side_index)
+	if indices.is_empty():
+		_log("Kasugai Crow's Message finds no Normal or standalone fighter.")
+		return
+	var side: Dictionary = sides[side_index]
+	var deck_index: int = int(indices[rng.randi_range(0,indices.size()-1)])
+	var fighter: Dictionary = side.deck.pop_at(deck_index)
+	if side.hand.size()<10: side.hand.append(fighter)
+	else: side.discard.append(fighter)
+	_log("Kasugai Crow's Message brings %s from the deck." % fighter.name)
+
+func _resolve_hand_swap_effect(side_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	var options: Array = _hand_fighter_indices(side_index)
+	if options.is_empty() or _deck_fighter_indices(side_index).is_empty():
+		_log("Kakushi Retrieval needs a fighter in both your hand and deck.")
+		return
+	if side_index==1:
+		_swap_hand_fighter_with_deck(side_index,int(options[0]))
+		return
+	var choices: Array = []
+	for hand_index in options:
+		var fighter: Dictionary = side.hand[int(hand_index)]
+		choices.append({"label":"EXCHANGE  •  "+str(fighter.name)+" ("+str(fighter.form)+")","hand_index":int(hand_index)})
+	_open_utility_choice("hand_swap",side_index,"Kakushi Retrieval","Choose a fighter in your hand to exchange with a random fighter in your deck.",choices)
+
+func _swap_hand_fighter_with_deck(side_index: int, hand_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	if hand_index<0 or hand_index>=side.hand.size() or str(side.hand[hand_index].get("kind",""))!="Fighter": return
+	var candidates: Array = _deck_fighter_indices(side_index)
+	if candidates.is_empty(): return
+	var deck_index: int = int(candidates[rng.randi_range(0,candidates.size()-1)])
+	var outgoing: Dictionary = side.hand[hand_index]
+	var incoming: Dictionary = side.deck[deck_index]
+	side.hand[hand_index]=incoming
+	side.deck[deck_index]=outgoing
+	_shuffle_array(side.deck)
+	_log("Kakushi Retrieval exchanges %s for %s." % [outgoing.name,incoming.name])
+
+func _resolve_peek_shuffle(side_index: int) -> void:
+	var side: Dictionary = sides[side_index]
+	if side.deck.is_empty():
+		_log("Swordsmith's Gift: your deck is empty.")
+		return
+	var top: Dictionary = side.deck[0]
+	if side_index==1:
+		var shuffle: bool = not DB.is_basic(top) or side.bench.size()>=3
+		if shuffle: _shuffle_array(side.deck)
+		_log("The rival looks at %s on top and %s the deck." % [top.name,"shuffles" if shuffle else "keeps the order of"])
+		return
+	var choices: Array = [{"label":"SHUFFLE DECK","shuffle":true},{"label":"KEEP THIS ORDER","shuffle":false}]
+	_open_utility_choice("peek_shuffle",side_index,"Swordsmith's Gift","Top card of your deck:\n"+_utility_card_preview(top),choices,{"top_card":top.duplicate(true)})
+
+func _utility_card_preview(card: Dictionary) -> String:
+	if str(card.get("kind",""))!="Fighter": return str(card.name)+"  •  "+str(card.kind)+"\n"+str(card.get("text",""))
+	var result: String = str(card.name)+"  •  "+str(card.form)+"  •  "+str(card.color)+" Color Type  •  "+str(card.hp)+" HP"
+	if str(card.get("ability_name",""))!="": result+="\nAbility: "+str(card.ability_name)+" — "+str(card.ability_text)
+	for attack in card.attacks: result+="\n"+str(attack.name)+"  •  "+str(attack.damage)+" damage"
+	return result
+
+func _shuffle_array(values: Array) -> void:
+	for i in range(values.size()-1,0,-1):
+		var other: int = rng.randi_range(0,i)
+		var temp: Variant = values[i]
+		values[i]=values[other]
+		values[other]=temp
+
 func _clear_statuses(unit: Dictionary) -> void:
 	unit["statuses"] = []
 
@@ -1018,7 +1230,11 @@ func _ai_turn(token: int) -> void:
 			if _boost(1,i,int(target)): break
 	for i in range(side.hand.size()-1,-1,-1):
 		if i >= side.hand.size(): continue
-		if side.hand[i].kind=="Item" or (side.hand[i].kind=="Support" and not side.support_used): _play_card(1,i)
+		if side.hand[i].kind=="Item" or (side.hand[i].kind=="Support" and not side.support_used):
+			if _play_card(1,i) and not pending_utility_choice.is_empty():
+				_render()
+				await _wait_unpaused(token)
+				if token!=generation or battle_over: return
 	_attach_energy(1,-1)
 	_ai_use_card_abilities(1)
 	_render()

@@ -17,6 +17,20 @@ func run() -> void:
 		if game.battle_over:
 			completed=true
 			break
+		if not game.pending_utility_choice.is_empty():
+			var pending: Dictionary = game.pending_utility_choice.duplicate(true)
+			var option: Dictionary = {}
+			match str(pending.get("effect","")):
+				"blue_energy_loop":
+					var choices: Array = game._blue_fighter_options(int(pending.get("side",0)))
+					if not choices.is_empty(): option=choices[0]
+				"foe_switch": option={"target":0}
+				"hand_swap":
+					var fighter_indices: Array = game._hand_fighter_indices(int(pending.get("side",0)))
+					if not fighter_indices.is_empty(): option={"hand_index":int(fighter_indices[0])}
+				"peek_shuffle": option={"shuffle":false}
+			game._resolve_utility_choice(option)
+			continue
 		if not game._can_act(0): continue
 		var me: Dictionary = game.sides[0]
 		for i in range(me.hand.size()-1,-1,-1):

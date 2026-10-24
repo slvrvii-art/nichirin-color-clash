@@ -1,6 +1,6 @@
 # Nichirin: Color Clash outcomes
 
-- [x] Card catalogue: 55 unique cards—39 fighters, 10 Support and 6 Item. Fighter editions are Normal or SURGE; full/basic art selection and featured alternate art remain.
+- [x] Card catalogue: 51 unique cards—39 fighters, 4 Support and 8 Item. Fighter editions are Normal or SURGE; full/basic art selection and featured alternate art remain.
 - [x] Decks and utility plays: Exactly 20 cards per deck, at most two copies of each card. Support usable once per turn; multiple Items allowed per turn. Older saved fighter IDs migrate to the matching Normal/SURGE cards, and the deck stays legal.
 - [x] Color and board rules: Red, Blue, Yellow, Green, Purple, Pink and White Color Types; one generated Color Energy and one Energy attachment per turn; one active fighter and three bench spots; SURGE knockout awards 2 points.
 - [x] Status effects: Sleep, Poison, Burn and Paralysis on selected attacks, with turn-start coin flips, damage ticks, retreat clears, curing Items/Supports, status pills, logged coin results and clearing on knockout.
@@ -29,8 +29,8 @@
 - [x] Full-art SURGE cards no longer have dark translucent bands; text uses an outline instead.
 
 ## Utility cut
-- [x] Catalog reduced to 55 cards: 39 fighters, 10 Support, 6 Item; generated filler cards removed.
-- [x] Duplicate utility effects replaced with distinct ones (draw-to-5, forced opponent switch, free retreat, bench heal, cleanse+draw, boost+guard).
+- [x] Catalog reduced to 51 cards: 39 fighters, 4 Support, 8 Item; generated filler cards removed.
+- [x] Utility effects updated to the requested Recovery Breathing, Sunlight Charm, Tamayo's Remedy, Kakushi Stretcher and named-card actions.
 - [x] Utility effect text wraps on large cards and trims on small cards.
 
 ## Rounded stats
@@ -46,3 +46,15 @@
 - [x] Recovery Breathing: flip a coin; on heads, generate one Energy from the Energy Zone and attach it to the active fighter.
 - [x] Sunlight Charm: “Your opponent shuffles their hand into their deck and draws 3 cards.”
 - [x] Remove Wisteria Medicine, Aoi's Care, Protect the Innocent, Haganezuka's Resolve, Butterfly Poultice and Nichirin Polish from the catalog; update preset/saved deck handling, card counts, and tests accordingly.
+
+## Utility card redesign
+- [x] Corps Intelligence switches out the opponent's Active Fighter to the Bench; the opponent chooses the new Active Fighter (the AI selects its own replacement).
+- [x] Urokodaki's Lesson lets you choose one of your Blue Color Type fighters, then flip until tails; for each heads, take one Blue Energy from your Energy Zone and attach it to that fighter.
+- [x] Ubuyashiki's Guidance draws 2 cards.
+- [x] Rename Kasugai Crow to Kasugai Crow's Message, make it an Item, and put one random Normal or standalone fighter from your deck into your hand.
+- [x] Remove Final Selection, Total Concentration, Butterfly Mansion and Hashira Training.
+- [x] Rename Wisteria Sanctuary to Hisa's Care; its effect clears all status conditions from your active fighter.
+- [x] Make Kakushi Retrieval an Item; choose a fighter in your hand and swap it with a random fighter in your deck.
+- [x] Swordsmith's Gift reveals the top card of your deck, then lets you choose whether to shuffle your deck.
+- [x] Recalculate card counts, update preset/deck recovery behavior, show all effect text/choices in game, and verify the effects.
+- [ ] Updated delivery: Save and confirm the matching managed checkpoint, prepared sharing metadata and live publication.

@@ -4,7 +4,7 @@ The approved game is an English-only, offline 2D Demon Slayer-themed trading car
 
 ## Implementation
 
-Keep the 150-card minimum while removing the six-form rarity ladder from fighter cards: the 24 character fighters each have exactly one Normal and one SURGE version, for 48 fighters. There are no extra rarity-print fighter duplicates. The remaining 102 catalog entries are utility cards divided between Support and Item, including the current support pool. Supports are limited to one per player's turn; any number of Items may be used that turn. Keep the strict 20-card deck, two-copy-per-catalog-card limit, color filters, selectable basic/full-art artwork and major alternate illustrations.
+Keep the current 51-card catalog: 39 fighter cards, 4 Support cards and 8 Item cards. Fighter editions are Normal or SURGE; there are no extra rarity-print fighter duplicates. Supports are limited to one per player's turn; any number of Items may be used that turn. Keep the strict 20-card deck, two-copy-per-catalog-card limit, color filters, selectable basic/full-art artwork and major alternate illustrations.
 
 Retain Red, Blue, Yellow, Green, Purple, Pink and White Color Types, one generated Color Energy and one manual attachment per turn, one active fighter and exactly three bench spaces per side. Items, Supports, abilities and moves resolve through authoritative legality, effect and targeting helpers shared by player and AI. SURGE knockouts award two points; the first side to three points wins.
 
@@ -14,10 +14,14 @@ Install the user's supplied slash GIF as the attack-animation source, preserve t
 
 Save deck/presentation preferences and match records locally through the atomic JSON helper; migrate old fighter IDs to the corresponding Normal/SURGE cards while keeping a legal deck after migration.
 
+## Utility-card effects
+
+Implement utility selection in the shared battle controller so player and AI effects resolve legally. Corps Intelligence makes the opponent choose (or the local AI choose) a replacement Active Fighter from their Bench. Urokodaki's Lesson selects a Blue fighter in play and flips until tails, attaching one Blue Energy per heads. Ubuyashiki's Guidance draws 2. Kasugai Crow's Message is an Item that fetches a random Normal or standalone fighter from the deck. Hisa's Care clears statuses from the active fighter. Kakushi Retrieval is an Item: select a Fighter in hand, exchange it with a random Fighter from the deck and shuffle the deck. Swordsmith's Gift reveals the top deck card and lets the player keep the order or shuffle; the AI makes a deterministic legal choice. Remove Final Selection, Total Concentration, Butterfly Mansion and Hashira Training, then update deck recovery, catalog counts and tests.
+
 ## Project structure
 
 - `scripts/card_game.gd`: hub, collection, deck builder, battle state, AI, card plays, turns, statuses, targeting, animations, persistence and UI.
-- `scripts/card_database.gd`: 24 characters/48 fighter editions, 102 Support/Item effects, starter decks and compatibility mapping.
+- `scripts/card_database.gd`: current 39 fighter cards, 4 Support cards, 8 Item cards, their effects, starter decks and compatibility mapping.
 - `scripts/battle_layout.gd`: board geometry and safe-canvas placement.
 - `scripts/card_face.gd`: Fighter/Support/Item face presentation, Normal/SURGE markers and selectable artwork.
 - `assets/interface/attack_slash_frames.tres` plus supplied GIF-derived frames: one-shot attack animation; untouched source under `source-art/`.
