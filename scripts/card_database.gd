@@ -152,7 +152,7 @@ const UTILITIES := [
 	["support_15","Unwavering Spirit","shield",20,"healing","Item"],
 	["item_00","Butterfly Poultice","heal_all",10,"healing","Item"],
 	["item_01","Sunlight Charm","boost_shield",10,"training","Item"],
-	["item_02","Kakushi Stretcher","bench_heal",20,"healing","Item"]
+	["item_02","Kakushi Stretcher","retreat_discount",1,"healing","Item"]
 ]
 # 39 fighter cards + 12 Supports + 10 Items.
 const TOTAL_CARDS := 61
@@ -234,7 +234,8 @@ static func _append_utility(cards: Array[Dictionary], id: String, name: String, 
 	var fixed := {
 		"remove_status":"Clear all status conditions from your active fighter.",
 		"foe_switch":"Your opponent switches their active fighter with their first benched fighter.",
-		"retreat_free":"This turn, your active fighter can retreat without paying Energy."
+		"retreat_free":"This turn, your active fighter can retreat without paying Energy.",
+		"retreat_discount":"During this turn, the retreat cost of your active fighter is 1 less."
 	}
 	var text: String = str(fixed[effect]) if fixed.has(effect) else str(descriptions.get(effect,"Restore %d HP to your active fighter.")) % value
 	cards.append({"id":id,"number":cards.size()+1,"name":name,"short":name,"form":kind,"kind":kind,"color":"White","hp":0,

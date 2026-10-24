@@ -35,3 +35,6 @@
 
 ## Rounded stats
 - [x] All fighter HP and attack damage rounded up to the nearest 10 (no values ending in 5).
+
+## Kakushi Stretcher
+- [x] Item effect: during this turn, your active fighter retreat cost is 1 less.

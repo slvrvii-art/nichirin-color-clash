@@ -208,9 +208,13 @@ func _run() -> void:
 	expect(not game._can_retreat(0),"no Energy, no retreat")
 	expect(game._play_card(0,0) and game._can_retreat(0) and game._side_retreat_cost(0)==0,"Kakushi Retrieval makes retreat free")
 	me.free_retreat = false
-	me.bench[0].current_hp = 40
+	me.active = _unit("giyu_surge")
+	me.active.energy = ["Blue"]
+	me.retreat_discount = 0
+	expect(game._side_retreat_cost(0)==2 and not game._can_retreat(0),"SURGE retreat costs 2")
 	me.hand = [DB.find_card("item_02")]
-	expect(game._play_card(0,0) and me.bench[0].current_hp==60,"Kakushi Stretcher heals the bench")
+	expect(game._play_card(0,0) and game._side_retreat_cost(0)==1 and game._can_retreat(0),"Kakushi Stretcher lowers retreat cost by 1")
+	me.retreat_discount = 0
 
 	# Sleep blocks attack and retreat; heads at turn start wakes
 	me.active = _unit("tanjiro_normal")

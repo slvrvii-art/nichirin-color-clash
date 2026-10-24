@@ -409,6 +409,7 @@ func _begin_turn(side_index: int) -> void:
 	side.support_used = false
 	side.retreated = false
 	side["free_retreat"] = false
+	side["retreat_discount"] = 0
 	if not side.active.is_empty(): side.active["ability_used"] = false
 	for unit in side.bench: unit["ability_used"] = false
 	var types: Array = side.colors
@@ -757,6 +758,7 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 				foe.bench[0] = moved
 				_log("%s is pulled back; %s is forced into the active spot." % [moved.short,foe.active.short])
 		"retreat_free": side["free_retreat"] = true
+		"retreat_discount": side["retreat_discount"] = int(side.get("retreat_discount",0))+amount
 func _clear_statuses(unit: Dictionary) -> void:
 	unit["statuses"] = []
 
@@ -772,7 +774,7 @@ func _retreat_cost(unit: Dictionary) -> int:
 func _side_retreat_cost(side_index: int) -> int:
 	var side: Dictionary = sides[side_index]
 	if bool(side.get("free_retreat",false)): return 0
-	return _retreat_cost(side.active)
+	return maxi(0,_retreat_cost(side.active)-int(side.get("retreat_discount",0)))
 func _can_retreat(side_index: int) -> bool:
 	var side: Dictionary = sides[side_index]
 	if side.retreated or side.active.is_empty() or side.bench.is_empty(): return false
