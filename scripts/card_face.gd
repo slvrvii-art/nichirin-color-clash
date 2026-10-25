@@ -15,18 +15,39 @@ static var _pending_textures: Dictionary = {}
 static var _texture_waiters: Dictionary = {}
 static var _failed_textures: Dictionary = {}
 static var _ui_node_pools: Dictionary = {}
+static var _ui_node_pool_ids: Dictionary = {}
+static var _pooled_ui_node_ids: Dictionary = {}
 static var _pooled_ui_node_count := 0
+static var _reported_stale_pool_kinds: Dictionary = {}
 const MAX_CACHED_TEXTURES := 24
 const MAX_POOLED_UI_NODES := 512
 
 static func acquire_ui_node(kind: String, script_resource: Script = null) -> Control:
 	var node: Control
 	var pool: Array = _ui_node_pools.get(kind, [])
-	if not pool.is_empty():
-		node = pool.pop_back() as Control
+	var pool_ids: Array = _ui_node_pool_ids.get(kind, [])
+	while not pool.is_empty():
+		var instance_id: int = int(pool_ids.pop_back()) if not pool_ids.is_empty() else -1
+		var pooled_value: Variant = pool.pop_back()
 		_pooled_ui_node_count = maxi(0, _pooled_ui_node_count - 1)
-		_ui_node_pools[kind] = pool
-	else:
+		if instance_id >= 0:
+			_pooled_ui_node_ids.erase(instance_id)
+		if not is_instance_valid(pooled_value):
+			if not _reported_stale_pool_kinds.has(kind):
+				push_warning("Discarding stale freed UI node %d from the %s pool." % [instance_id,kind])
+				_reported_stale_pool_kinds[kind] = true
+			continue
+		var pooled_node := pooled_value as Control
+		if pooled_node == null or pooled_node.get_parent() != null:
+			if not _reported_stale_pool_kinds.has(kind):
+				push_warning("Discarding an attached or invalid UI node from the %s pool." % kind)
+				_reported_stale_pool_kinds[kind] = true
+			continue
+		node = pooled_node
+		break
+	_ui_node_pools[kind] = pool
+	_ui_node_pool_ids[kind] = pool_ids
+	if node == null:
 		match kind:
 			"Control": node = Control.new()
 			"ColorRect": node = ColorRect.new()
@@ -50,7 +71,8 @@ static func acquire_ui_node(kind: String, script_resource: Script = null) -> Con
 	return node
 
 static func recycle_children(parent: Control) -> void:
-	for child in parent.get_children().duplicate():
+	while parent.get_child_count() > 0:
+		var child := parent.get_child(0)
 		parent.remove_child(child)
 		if child is Control:
 			recycle_tree(child as Control)
@@ -58,15 +80,28 @@ static func recycle_children(parent: Control) -> void:
 			child.queue_free()
 
 static func recycle_tree(control: Control) -> void:
+	if control.get_parent() != null:
+		control.get_parent().remove_child(control)
 	recycle_children(control)
 	_reset_control(control)
 	var kind := _pool_kind(control)
+	var instance_id: int = control.get_instance_id()
+	if _pooled_ui_node_ids.has(instance_id):
+		var duplicate_key := "duplicate:%s" % kind
+		if not _reported_stale_pool_kinds.has(duplicate_key):
+			push_warning("Ignoring duplicate recycle of UI node %d in the %s pool." % [instance_id,kind])
+			_reported_stale_pool_kinds[duplicate_key] = true
+		return
 	if _pooled_ui_node_count >= MAX_POOLED_UI_NODES:
 		control.free()
 		return
 	var pool: Array = _ui_node_pools.get(kind, [])
+	var pool_ids: Array = _ui_node_pool_ids.get(kind, [])
 	pool.append(control)
+	pool_ids.append(instance_id)
 	_ui_node_pools[kind] = pool
+	_ui_node_pool_ids[kind] = pool_ids
+	_pooled_ui_node_ids[instance_id] = kind
 	_pooled_ui_node_count += 1
 
 static func clear_runtime_caches() -> void:
@@ -76,7 +111,10 @@ static func clear_runtime_caches() -> void:
 			if is_instance_valid(pooled_node) and pooled_node.get_parent() == null:
 				pooled_node.free()
 	_ui_node_pools.clear()
+	_ui_node_pool_ids.clear()
+	_pooled_ui_node_ids.clear()
 	_pooled_ui_node_count = 0
+	_reported_stale_pool_kinds.clear()
 	texture_cache.clear()
 	_texture_lru.clear()
 	_pending_textures.clear()
@@ -90,12 +128,13 @@ static func _pool_kind(control: Control) -> String:
 	return control.get_class()
 
 static func _reset_control(control: Control) -> void:
-	for signal_info in control.get_signal_list():
-		var signal_name := StringName(signal_info.get("name", ""))
-		for connection in control.get_signal_connection_list(signal_name):
-			var callback: Callable = connection.get("callable", Callable())
-			if control.is_connected(signal_name, callback):
-				control.disconnect(signal_name, callback)
+	if control is LineEdit:
+		_disconnect_signal(control, &"text_changed")
+		_disconnect_signal(control, &"text_submitted")
+	elif control is OptionButton:
+		_disconnect_signal(control, &"item_selected")
+	elif control is Button:
+		_disconnect_signal(control, &"pressed")
 	control.position = Vector2.ZERO
 	control.size = Vector2.ZERO
 	control.custom_minimum_size = Vector2.ZERO
@@ -121,7 +160,11 @@ static func _reset_control(control: Control) -> void:
 	control.remove_theme_font_size_override("font_size")
 	for constant_name in ["outline_size", "shadow_offset_x", "shadow_offset_y", "separation"]:
 		control.remove_theme_constant_override(constant_name)
-	if control is Button:
+	if control is OptionButton:
+		var option := control as OptionButton
+		option.clear()
+		option.select(-1)
+	elif control is Button:
 		var button := control as Button
 		button.text = ""
 		button.disabled = false
@@ -141,10 +184,6 @@ static func _reset_control(control: Control) -> void:
 		line_edit.clear()
 		line_edit.placeholder_text = ""
 		line_edit.editable = true
-	elif control is OptionButton:
-		var option := control as OptionButton
-		option.clear()
-		option.select(-1)
 	elif control is ScrollContainer:
 		var scroll := control as ScrollContainer
 		scroll.scroll_horizontal = 0
@@ -156,6 +195,12 @@ static func _reset_control(control: Control) -> void:
 		control.set("full_art", false)
 		control.set("compact", false)
 		control.set("face_size", Vector2.ZERO)
+
+static func _disconnect_signal(control: Control, signal_name: StringName) -> void:
+	for connection in control.get_signal_connection_list(signal_name):
+		var callback: Callable = connection.get("callable", Callable())
+		if control.is_connected(signal_name, callback):
+			control.disconnect(signal_name, callback)
 
 static func script_resource_is_card_face(control: Control) -> bool:
 	var script_resource := control.get_script() as Script

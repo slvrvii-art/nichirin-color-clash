@@ -2,9 +2,12 @@ extends Control
 ## Lightweight game-specific boot with honest preparation and recovery.
 const FONTS := preload("res://scripts/manus/game_fonts.gd")
 @export_file("*.tscn") var target_scene := "res://scenes/card_game.tscn"
+const LOAD_POLL_INTERVAL := 0.05
+const LOAD_TIMEOUT_MSEC := 30000
 var progress_bar: ProgressBar
 var status_label: Label
 var retry_button: Button
+var load_poll_timer: Timer
 var loading := false
 var transitioning := false
 
@@ -48,6 +51,10 @@ func _ready() -> void:
 	retry_button.hide()
 	retry_button.pressed.connect(_begin_loading)
 	add_child(retry_button)
+	load_poll_timer=Timer.new()
+	load_poll_timer.one_shot=true
+	load_poll_timer.wait_time=LOAD_POLL_INTERVAL
+	add_child(load_poll_timer)
 	_begin_loading()
 
 func _begin_loading() -> void:
@@ -55,6 +62,8 @@ func _begin_loading() -> void:
 	loading=true
 	retry_button.hide()
 	progress_bar.show()
+	progress_bar.indeterminate=true
+	progress_bar.value=0.0
 	status_label.text="Preparing your armory…"
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -65,12 +74,43 @@ func _enter_game() -> void:
 		_fail()
 		return
 	transitioning=true
-	var scene := ResourceLoader.load(target_scene,"PackedScene") as PackedScene
-	if scene==null or get_tree().change_scene_to_packed(scene)!=OK: _fail()
+	progress_bar.indeterminate=false
+	progress_bar.value=0.0
+	status_label.text="Loading the game…"
+	var load_started_msec := Time.get_ticks_msec()
+	var status := ResourceLoader.load_threaded_get_status(target_scene)
+	if status != ResourceLoader.THREAD_LOAD_LOADED and status != ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		var request_error := ResourceLoader.load_threaded_request(target_scene,"PackedScene")
+		if request_error != OK:
+			status = ResourceLoader.load_threaded_get_status(target_scene)
+			if status != ResourceLoader.THREAD_LOAD_IN_PROGRESS and status != ResourceLoader.THREAD_LOAD_LOADED:
+				_fail()
+				return
+	var progress: Array = []
+	while is_inside_tree():
+		if Time.get_ticks_msec() - load_started_msec > LOAD_TIMEOUT_MSEC:
+			_fail()
+			return
+		progress.clear()
+		status = ResourceLoader.load_threaded_get_status(target_scene,progress)
+		if not progress.is_empty():
+			progress_bar.value=clampf(float(progress[0])*100.0,0.0,100.0)
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			var scene := ResourceLoader.load_threaded_get(target_scene) as PackedScene
+			if scene == null or get_tree().change_scene_to_packed(scene) != OK:
+				_fail()
+			return
+		if status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			_fail()
+			return
+		load_poll_timer.start()
+		await load_poll_timer.timeout
+	if is_inside_tree(): _fail()
 
 func _fail() -> void:
 	loading=false
 	transitioning=false
 	progress_bar.hide()
+	progress_bar.indeterminate=true
 	status_label.text="Unable to prepare the game. Please retry."
 	retry_button.show()

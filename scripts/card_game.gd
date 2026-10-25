@@ -27,6 +27,7 @@ var modal: Control
 var texture_poll_timer: Timer
 var catalog: Array[Dictionary] = []
 var cards_by_id := {}
+var search_text_by_id: Dictionary = {}
 var deck: Array = []
 var art_choices := {}
 var discovered: Array = []
@@ -40,6 +41,9 @@ var filter_color := "All colors"
 var filter_rarity := "All rarities"
 var filter_kind := "All cards"
 var notice := ""
+var save_pending := false
+var last_save_error := OK
+var match_record_saved := true
 var sides: Array[Dictionary] = []
 var current_side := 0
 var turn_number := 1
@@ -62,6 +66,7 @@ var battle_log: Array[String] = []
 var board_nodes := {}
 var rng := RandomNumberGenerator.new()
 var battle_layout := LAYOUT.new()
+var _layout_refresh_scheduled := false
 var attack_animations := 0
 var attack_gif_animations := 0
 var damage_animations := 0
@@ -86,6 +91,10 @@ func _ready() -> void:
 	coin_overlay = COIN_UI.new()
 	coin_overlay.layer = 40
 	add_child(coin_overlay)
+	var viewport := get_viewport()
+	if not viewport.size_changed.is_connected(_queue_battle_layout_refresh):
+		viewport.size_changed.connect(_queue_battle_layout_refresh)
+	_configure_battle_layout_from_viewport()
 	texture_poll_timer = Timer.new()
 	texture_poll_timer.one_shot = true
 	texture_poll_timer.wait_time = 0.05
@@ -107,6 +116,51 @@ func _exit_tree() -> void:
 	if is_instance_valid(root_ui):
 		FACE.recycle_children(root_ui)
 	FACE.clear_runtime_caches()
+
+func _display_safe_insets_for_viewport(viewport_size: Vector2) -> Vector4:
+	var window_size: Vector2i = DisplayServer.window_get_size()
+	if window_size.x <= 0 or window_size.y <= 0:
+		return Vector4.ZERO
+	var display_safe_area: Rect2i = DisplayServer.get_display_safe_area()
+	if display_safe_area.size.x <= 0 or display_safe_area.size.y <= 0:
+		return Vector4.ZERO
+	var window_position: Vector2i = DisplayServer.window_get_position()
+	var window_end := window_position + window_size
+	var logical_scale := Vector2(viewport_size.x / float(window_size.x), viewport_size.y / float(window_size.y))
+	var left_pixels := clampf(float(display_safe_area.position.x - window_position.x), 0.0, float(window_size.x))
+	var top_pixels := clampf(float(display_safe_area.position.y - window_position.y), 0.0, float(window_size.y))
+	var right_pixels := clampf(float(window_end.x - display_safe_area.end.x), 0.0, float(window_size.x))
+	var bottom_pixels := clampf(float(window_end.y - display_safe_area.end.y), 0.0, float(window_size.y))
+	return Vector4(
+		left_pixels * logical_scale.x,
+		top_pixels * logical_scale.y,
+		right_pixels * logical_scale.x,
+		bottom_pixels * logical_scale.y
+	)
+
+func _configure_battle_layout_from_viewport() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = LAYOUT.DESIGN_SIZE
+	_apply_battle_layout(viewport_size, _display_safe_insets_for_viewport(viewport_size))
+
+func _apply_battle_layout(viewport_size: Vector2, safe_insets: Vector4) -> void:
+	battle_layout.configure(viewport_size, safe_insets, LAYOUT.PROFILE_STANDARD)
+	if is_instance_valid(root_ui):
+		root_ui.position = battle_layout.fit_offset
+		root_ui.scale = Vector2.ONE * battle_layout.fit_scale
+
+func _queue_battle_layout_refresh() -> void:
+	if _layout_refresh_scheduled:
+		return
+	_layout_refresh_scheduled = true
+	call_deferred("_refresh_battle_layout")
+
+func _refresh_battle_layout() -> void:
+	_layout_refresh_scheduled = false
+	_configure_battle_layout_from_viewport()
+	if screen_name == "battle":
+		_render()
 
 func _start_texture_poll() -> void:
 	if FACE.has_pending_textures() and texture_poll_timer.is_stopped():
@@ -147,8 +201,30 @@ func _load_save() -> void:
 	wins = int(saved.get("wins",0))
 	matches = int(saved.get("matches",0))
 
-func _save() -> void:
-	ATOMIC.save_dictionary(SAVE_PATH,{"deck":deck,"art_choices":art_choices,"discovered":discovered,"full_art":full_art,"reduced_motion":reduced_motion,"wins":wins,"matches":matches})
+func _save(path: String = SAVE_PATH) -> Error:
+	return ATOMIC.save_dictionary(
+		path,
+		{"deck":deck,"art_choices":art_choices,"discovered":discovered,"full_art":full_art,"reduced_motion":reduced_motion,"wins":wins,"matches":matches}
+	)
+
+func _persist_save(path: String = SAVE_PATH) -> bool:
+	return _record_save_result(_save(path))
+
+func _record_save_result(save_error: Error) -> bool:
+	if save_error == OK:
+		var recovered := save_pending
+		save_pending = false
+		last_save_error = OK
+		if not match_record_saved:
+			match_record_saved = true
+		if recovered:
+			notice = "Local save recovered. Unsaved changes are now stored."
+		return true
+	save_pending = true
+	last_save_error = save_error
+	notice = "Local save failed (%s). Changes remain in memory; retry from Settings." % error_string(save_error)
+	push_warning("Nichirin local save failed: %s" % error_string(save_error))
+	return false
 
 func _go(screen: String) -> void:
 	if screen_name == "battle" and screen != "battle":
@@ -177,7 +253,9 @@ func _render() -> void:
 	else:
 		root_ui = FACE.acquire_ui_node("Control")
 		add_child(root_ui)
-	root_ui.size = Vector2(1440,900)
+	root_ui.size = LAYOUT.DESIGN_SIZE
+	root_ui.position = battle_layout.fit_offset
+	root_ui.scale = Vector2.ONE * battle_layout.fit_scale
 	root_ui.visible = true
 	board_nodes.clear()
 	var bg := FACE.acquire_ui_node("ColorRect") as ColorRect
@@ -192,7 +270,9 @@ func _render() -> void:
 		"home": _home()
 		"collection", "deck": _collection()
 		"battle": _battle()
-	if notice != "":
+	if save_pending:
+		_text(root_ui,"LOCAL SAVE FAILED: %s. Changes are not stored; retry in Settings." % error_string(last_save_error),Rect2(148,868,1250,24),12,RED,MEDIUM)
+	elif notice != "":
 		_text(root_ui,notice,Rect2(148,868,1250,24),14,GOLD)
 
 func _nav() -> void:
@@ -249,17 +329,20 @@ func _home() -> void:
 	_button(root_ui,"EXPLORE COLLECTION   →",Rect2(1071,779,301,44),func(): _go("collection"),false,12)
 
 func _filtered() -> Array[Dictionary]:
+	if search_text_by_id.size() != catalog.size():
+		search_text_by_id.clear()
+		for card in catalog:
+			search_text_by_id[str(card.id)] = (str(card.name)+" "+str(card.form)+" "+str(card.text)).to_lower()
+	var query := search_text.to_lower()
 	var result: Array[Dictionary] = []
 	for card in catalog:
-		if search_text != "" and not (str(card.name)+" "+str(card.form)+" "+str(card.text)).to_lower().contains(search_text.to_lower()): continue
+		if not query.is_empty() and not str(search_text_by_id.get(str(card.id),"")).contains(query): continue
 		if filter_color != "All colors" and card.color != filter_color: continue
 		if filter_rarity != "All rarities" and card.rarity != filter_rarity: continue
 		if filter_kind in ["Support","Item"] and card.kind != filter_kind: continue
 		if filter_kind == "Fighter" and card.kind != "Fighter": continue
 		if filter_kind == "SURGE" and not card.surge: continue
 		result.append(card)
-	result.sort_custom(func(a: Dictionary,b: Dictionary):
-		return int(a.number)<int(b.number))
 	return result
 
 func _collection() -> void:
@@ -292,7 +375,7 @@ func _collection() -> void:
 		var rect := Rect2(155+(j%columns)*stride,234+floori(float(j)/columns)*302,card_width,268)
 		_card(root_ui,card,rect,func(): _card_detail(str(card.id)))
 		if building:
-			_button(root_ui,"+ ADD  "+str(deck.count(card.id))+"/2",Rect2(rect.position.x,rect.end.y+5,card_width,24),func(): _add_to_deck(str(card.id)),false,10)
+			_button(root_ui,"+ ADD  "+str(deck.count(card.id))+"/2",Rect2(rect.position.x,rect.end.y+5,card_width,24),Callable(self,"_add_to_deck").bind(str(card.id)),false,10)
 	if filtered.is_empty(): _text(root_ui,"No cards match these filters.",Rect2(180,300,800,80),23,MUTED)
 	_button(root_ui,"← PREVIOUS",Rect2(155,838,180,36),func(): page=maxi(0,page-1); _render(),false,11)
 	_text(root_ui,"PAGE %d / %d" % [page+1,max_page+1],Rect2(345,843,450,27),11,GOLD,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
@@ -321,9 +404,9 @@ func _deck_panel() -> void:
 		row.custom_minimum_size = Vector2(264,48)
 		row.add_theme_font_size_override("font_size",11)
 		row.add_theme_color_override("font_color",DB.color_for(str(card.color)))
-		row.pressed.connect(func(): deck.erase(id); _save(); _render())
+		row.pressed.connect(func(): deck.erase(id); _persist_save(); _render())
 		list.add_child(row)
-	_button(root_ui,"RESTORE STARTER",Rect2(1101,705,278,41),func(): deck=DB.starter_deck(); _save(); _render(),false,11)
+	_button(root_ui,"RESTORE STARTER",Rect2(1101,705,278,41),func(): deck=DB.starter_deck(); _persist_save(); _render(),false,11)
 	_button(root_ui,"BATTLE WITH THIS DECK →",Rect2(1101,759,278,46),_start_battle,true,12)
 
 func _add_to_deck(id: String) -> void:
@@ -333,10 +416,15 @@ func _add_to_deck(id: String) -> void:
 		notice = "You already have two copies of this card."
 	else:
 		deck.append(id)
-		discovered.append(id) if not discovered.has(id) else null
-		notice = "Added "+str(cards_by_id[id].name)+" to your deck."
-		_save()
+		if not discovered.has(id):
+			discovered.append(id)
+			notice = "Added "+str(cards_by_id[id].name)+" to your deck."
+			_persist_save()
 	_render()
+
+func _close_modal_and_add_to_deck(id: String) -> void:
+	_close_modal()
+	_add_to_deck(id)
 
 # Pass an in-play unit to show its live HP, Energy and status instead of collection actions.
 func _card_detail(id: String, in_play: Dictionary = {}) -> void:
@@ -388,7 +476,7 @@ func _card_detail(id: String, in_play: Dictionary = {}) -> void:
 	elif str(card.get("boost_from",""))!="":
 		var normal_id: String = str(card.boost_from)
 		_button(box,"←  VIEW NORMAL FORM",Rect2(363,532,219,40),func(): _card_detail(normal_id),false,11)
-	_button(box,"+ ADD TO DECK",Rect2(363,592,219,43),func(): _close_modal(); _add_to_deck(id),true,12)
+	_button(box,"+ ADD TO DECK",Rect2(363,592,219,43),Callable(self,"_close_modal_and_add_to_deck").bind(id),true,12)
 	_button(box,"CLOSE",Rect2(600,592,180,43),_close_modal,false,12)
 
 func _new_side(ids: Array) -> Dictionary:
@@ -605,17 +693,27 @@ func _draw_cards(side_index: int, count: int) -> void:
 		else:
 			side.hand.append(drawn)
 
+func _battle_reference_zone(identifier: StringName) -> Rect2:
+	return battle_layout.to_reference(battle_layout.zone(identifier))
+
+func _battle_reference_bench(side: int, index: int) -> Rect2:
+	return battle_layout.to_reference(battle_layout.bench(side, index))
+
 func _battle() -> void:
 	_header("COLOR CLASH","Choose your opening Active, then duel. One active fighter and three bench spots.")
 	var me: Dictionary = sides[0]
 	var enemy: Dictionary = sides[1]
-	_text(root_ui,"OPPONENT",Rect2(433,117,500,24),11,RED,MEDIUM)
-	_text(root_ui,"CHOOSE NEW ACTIVE" if pending_replacement_side==0 else ("YOUR ACTIVE" if not opening_active_pending else "CHOOSE YOUR ACTIVE"),Rect2(433,424,380,24),11,GOLD,MEDIUM)
-	_text(root_ui,"BENCH  /  %d OF 3" % enemy.bench.size(),Rect2(661,120,395,25),10,MUTED)
-	_text(root_ui,"BENCH  /  %d OF 3" % me.bench.size(),Rect2(661,447,395,25),10,MUTED)
+	var enemy_active_rect := _battle_reference_zone(&"enemy_active")
+	var player_active_rect := _battle_reference_zone(&"player_active")
+	var enemy_bench_rect := _battle_reference_zone(&"enemy_bench")
+	var player_bench_rect := _battle_reference_zone(&"player_bench")
+	_text(root_ui,"OPPONENT",Rect2(enemy_active_rect.position.x,enemy_active_rect.position.y-28,500,24),11,RED,MEDIUM)
+	_text(root_ui,"CHOOSE NEW ACTIVE" if pending_replacement_side==0 else ("YOUR ACTIVE" if not opening_active_pending else "CHOOSE YOUR ACTIVE"),Rect2(player_active_rect.position.x,player_active_rect.position.y-33,380,24),11,GOLD,MEDIUM)
+	_text(root_ui,"BENCH  /  %d OF 3" % enemy.bench.size(),Rect2(enemy_bench_rect.position.x,enemy_bench_rect.position.y-32,enemy_bench_rect.size.x,25),10,MUTED)
+	_text(root_ui,"BENCH  /  %d OF 3" % me.bench.size(),Rect2(player_bench_rect.position.x,player_bench_rect.position.y-38,player_bench_rect.size.x,25),10,MUTED)
 	for side_index in range(2):
 		var side: Dictionary = sides[side_index]
-		var active_rect: Rect2 = battle_layout.zone(&"player_active" if side_index==0 else &"enemy_active")
+		var active_rect: Rect2 = _battle_reference_zone(&"player_active" if side_index==0 else &"enemy_active")
 		if side.active.is_empty():
 			_panel(root_ui,active_rect,Color(0.05,0.07,0.12,0.75),Color("#c8ac72") if side_index==0 else Color("#344056"),8)
 			var prompt := "CHOOSE FROM\nYOUR BENCH" if pending_replacement_side==side_index else ("CHOOSE FROM\nYOUR HAND" if side_index==0 and opening_active_pending else "ACTIVE SPOT")
@@ -623,7 +721,7 @@ func _battle() -> void:
 		else:
 			_board_card(side_index,-1,side.active,active_rect)
 		for i in range(3):
-			var rect: Rect2 = battle_layout.bench(side_index,i)
+			var rect: Rect2 = _battle_reference_bench(side_index,i)
 			if i < side.bench.size():
 				_board_card(side_index,i,side.bench[i],rect)
 			else:
@@ -1319,7 +1417,7 @@ func _finish_battle(winner: int) -> void:
 	pending_turn_advance = -1
 	matches+=1
 	if winner==0: wins+=1
-	_save()
+	match_record_saved = _persist_save()
 	battle_finished.emit(winner==0)
 	_log("Victory!" if winner==0 else "Defeat. Draw your blade again.")
 
@@ -1672,6 +1770,8 @@ func _result_modal() -> void:
 	_text(box,"VICTORY" if victory else "DEFEAT",Rect2(32,40,639,72),49,GOLD if victory else RED,DISPLAY,HORIZONTAL_ALIGNMENT_CENTER)
 	_text(box,"A decisive strike. An unbreakable spirit." if victory else "Even a Hashira learns from the next duel.",Rect2(30,137,641,45),18,CREAM,BODY,HORIZONTAL_ALIGNMENT_CENTER)
 	_text(box,"YOU %d  /  RIVAL %d KNOCKOUT POINTS" % [sides[0].points,sides[1].points],Rect2(30,194,641,29),12,MUTED,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
+	if not match_record_saved:
+		_text(box,"MATCH RECORD NOT SAVED — changes remain in memory until saving succeeds.",Rect2(30,228,641,20),11,RED,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
 	_button(box,"DUEL AGAIN",Rect2(51,264,281,46),func(): _close_modal(); _start_battle(),true,14)
 	_button(box,"BACK TO HUB",Rect2(365,264,281,46),func(): _go("home"),false,14)
 
@@ -1685,11 +1785,15 @@ func _rules() -> void:
 func _settings() -> void:
 	var box := _modal_box(Rect2(471,280,640,345))
 	_text(box,"TABLE SETTINGS",Rect2(31,32,576,43),27,CREAM,DISPLAY)
-	_button(box,"REDUCED MOTION: "+("ON" if reduced_motion else "OFF"),Rect2(34,112,570,45),func(): reduced_motion=not reduced_motion; _save(); _close_modal(); _settings(),reduced_motion,12)
+	_button(box,"REDUCED MOTION: "+("ON" if reduced_motion else "OFF"),Rect2(34,112,570,45),func(): reduced_motion=not reduced_motion; _persist_save(); _close_modal(); _settings(),reduced_motion,12)
 	_button(box,"OPEN SOURCE LICENSES",Rect2(34,171,570,43),func():
 		LICENSES.open(self),false,12)
-	_text(box,"Local saves • Offline AI battles • English",Rect2(34,226,570,29),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_CENTER)
-	_button(box,"CLOSE",Rect2(34,272,570,43),_close_modal,true,12)
+	if save_pending:
+		_text(box,"SAVE FAILED: "+error_string(last_save_error),Rect2(34,218,570,22),11,RED,MEDIUM)
+		_button(box,"RETRY LOCAL SAVE",Rect2(34,246,570,38),func(): _persist_save(); _close_modal(); _settings(),false,11)
+	else:
+		_text(box,"Local saves • Offline AI battles • English",Rect2(34,226,570,29),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_CENTER)
+	_button(box,"CLOSE",Rect2(34,302,570,43),_close_modal,true,12)
 
 func _pause_menu() -> void:
 	if screen_name != "battle": return

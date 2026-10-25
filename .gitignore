@@ -124,3 +124,8 @@ node_modules/
 
 # Subset OFL fonts restore from assets.lock.json.
 /assets/template/fonts/**/*.woff2
+
+# Standalone GitHub export includes the project's asset files rather than relying on Manus hydration.
+!assets/**
+# Godot import sidecars generated only for the last deployed web export are transient.
+/site/**/*.import

@@ -23,6 +23,14 @@ func _unit(id: String) -> Dictionary:
 func _run() -> void:
 	var catalog := DB.catalog()
 	expect(catalog.size()==DB.TOTAL_CARDS and DB.TOTAL_CARDS==51,"51-card catalog")
+	var detached_view := DB.catalog()
+	detached_view.clear()
+	expect(DB.catalog().size()==DB.TOTAL_CARDS,"catalog views cannot mutate the shared catalog")
+	var cached_attacks: Array = catalog[0].get("attacks",[])
+	expect(catalog[0].is_read_only() and cached_attacks.is_read_only(),"shared card definitions and nested attacks are frozen")
+	var mutable_copy := DB.find_card("tanjiro_normal")
+	mutable_copy["test_copy_marker"] = true
+	expect(mutable_copy.has("test_copy_marker") and not DB.find_card("tanjiro_normal").has("test_copy_marker"),"find_card returns isolated mutable copies")
 	var ids := {}
 	var fighters := 0
 	var supports := 0
@@ -69,6 +77,41 @@ func _run() -> void:
 	root.add_child(game)
 	await process_frame
 	expect(game.screen_name=="home","boots to game hub")
+	game.screen_name="collection"
+	game._render()
+	var ordered_results: Array[Dictionary] = game._filtered()
+	var ordered := true
+	for i in range(1,ordered_results.size()):
+		if int(ordered_results[i-1].number)>int(ordered_results[i].number): ordered=false
+	expect(ordered and ordered_results.size()==DB.TOTAL_CARDS,"collection filters retain catalog-number order")
+	game.search_text="TANJIRO"
+	var searched_results: Array[Dictionary] = game._filtered()
+	var search_is_case_insensitive := not searched_results.is_empty()
+	for card in searched_results:
+		var searchable := (str(card.name)+" "+str(card.form)+" "+str(card.text)).to_lower()
+		if not searchable.contains("tanjiro"): search_is_case_insensitive=false
+	expect(search_is_case_insensitive,"collection search remains case-insensitive")
+	game.search_text=""
+	var first_filters: Array[Node] = game.root_ui.find_children("*","OptionButton",true,false)
+	var initial_filter_ids := {}
+	var initial_item_counts: Array[int] = []
+	for filter_node in first_filters:
+		var instance_id: int = filter_node.get_instance_id()
+		initial_filter_ids[instance_id]=true
+		initial_item_counts.append((filter_node as OptionButton).get_popup().item_count)
+	initial_item_counts.sort()
+	game._render()
+	var second_filters: Array[Node] = game.root_ui.find_children("*","OptionButton",true,false)
+	var filters_reused_cleanly := second_filters.size()==3 and second_filters.size()==initial_filter_ids.size()
+	var second_item_counts: Array[int] = []
+	for filter_node in second_filters:
+		var instance_id: int = filter_node.get_instance_id()
+		if not initial_filter_ids.has(instance_id):
+			filters_reused_cleanly=false
+		second_item_counts.append((filter_node as OptionButton).get_popup().item_count)
+	second_item_counts.sort()
+	filters_reused_cleanly = filters_reused_cleanly and second_item_counts==initial_item_counts
+	expect(filters_reused_cleanly,"reused collection filters clear old options without allocating replacement nodes")
 	game.deck=DB.starter_deck()
 	game.show_coin_flip_animations = false
 	game.reduced_motion = true

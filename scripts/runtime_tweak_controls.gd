@@ -189,6 +189,9 @@ func _values_equal(descriptor: Dictionary, first: Variant, second: Variant) -> b
 func _apply_audio_bus_values() -> void:
     if _catalog.is_empty():
         return
+    var master_index := AudioServer.get_bus_index(&"Master")
+    if master_index >= 0:
+        AudioServer.set_bus_mute(master_index, get_bool(&"audio.muted"))
     for pair: Array in [
         [&"Master", &"audio.master_db"], [&"UI", &"audio.ui_db"],
         [&"Cards", &"audio.cards_db"], [&"Combat", &"audio.combat_db"],

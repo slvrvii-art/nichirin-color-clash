@@ -43,3 +43,14 @@ Use the supplied slash GIF as the attack strike, smoothly keyed so its dark back
 
 ## Performance refactor
 Keep one long-lived game UI root and recycle child controls and card-face subtrees through a bounded pool; reset layout, visual state and signal connections before reuse. Centralize card-image requests in `card_face.gd` using deduplicated threaded loads, weak target references and path checks; a single short-interval timer in `card_game.gd` polls only while assets are pending, then stops. Bound the explicit texture cache, clear textures from pooled nodes, and replace eager legacy art preloads with lazy path-based compatibility only where dormant code still needs it. Preserve the required controller-script reference in the battle scene.
+
+
+## Performance optimization follow-up
+Keep gameplay and deck validation on the main thread: the active deck is only 20 cards and the curated catalog is 51 definitions, so custom workers, locks and concurrent collections would add overhead without useful parallelism. Build the card catalog once on first access, freeze the cached definitions recursively, and maintain an ID index; return a shallow array view for display, copy one card only when gameplay needs a mutable instance, and validate directly against the index. Load the active PackedScene with `ResourceLoader.load_threaded_request()` and a single 50 ms progress poll, preserving the existing retry UI. Limit persisted JSON to 1 MiB before reading or writing to bound malformed-save memory and disk use. Retain the existing bounded UI-node and texture pools and weak target references.
+
+
+For collection filtering, lazily cache normalized search text per immutable card and preserve the catalog's number order; each filter pass can then avoid rebuilding/lowercasing every card's fields and re-sorting an already ordered result.
+
+
+## Zenitsu SURGE artwork replacement
+Replace only `assets/fighters/zenitsu_full.png` with the user-supplied image, byte-for-byte, via the guarded asset-edit candidate workflow. Preserve the resource path and update asset-lock content metadata only through the validated tool process; do not crop or recompress the image.

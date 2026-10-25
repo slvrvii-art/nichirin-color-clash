@@ -3,6 +3,8 @@ extends RefCounted
 
 const BACKUP_SUFFIX := ".bak"
 const TEMPORARY_SUFFIX := ".tmp"
+const MAX_JSON_BYTES := 1024 * 1024
+const MAX_JSON_CHARS := MAX_JSON_BYTES / 4
 
 
 static func load_dictionary(path: String, validator: Callable = Callable()) -> Dictionary:
@@ -26,12 +28,19 @@ static func save_dictionary(path: String, payload: Dictionary, validator: Callab
 	var directory_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(directory))
 	if directory_error != OK:
 		return directory_error
+	var serialized_payload := JSON.stringify(payload)
+	if serialized_payload.length() > MAX_JSON_CHARS:
+		return ERR_INVALID_DATA
+	var serialized_bytes := serialized_payload.to_utf8_buffer()
+	if serialized_bytes.size() + 1 > MAX_JSON_BYTES:
+		return ERR_INVALID_DATA
 
 	var temporary_path := path + TEMPORARY_SUFFIX
 	var temporary := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if temporary == null:
 		return FileAccess.get_open_error()
-	temporary.store_string(JSON.stringify(payload) + "\n")
+	temporary.store_buffer(serialized_bytes)
+	temporary.store_8(10)
 	temporary.flush()
 	temporary.close()
 	if not bool(_read_dictionary(temporary_path, validator).ok):
@@ -71,8 +80,14 @@ static func _read_dictionary(path: String, validator: Callable = Callable()) -> 
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {"ok": false, "value": {}}
+	var file_size := file.get_length()
+	if file_size < 0 or file_size > MAX_JSON_BYTES:
+		file.close()
+		return {"ok": false, "value": {}}
+	var source := file.get_as_text()
+	file.close()
 	var parser := JSON.new()
-	if parser.parse(file.get_as_text()) != OK:
+	if parser.parse(source) != OK:
 		return {"ok": false, "value": {}}
 	var parsed: Variant = parser.data
 	var valid: bool = parsed is Dictionary and (not validator.is_valid() or bool(validator.call(parsed)))

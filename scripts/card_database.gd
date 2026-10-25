@@ -147,7 +147,43 @@ const UTILITIES := [
 # 39 fighter cards + 4 Supports + 8 Items.
 const TOTAL_CARDS := 51
 
+
+static var _catalog_cache_ready := false
+static var _catalog_cache: Array[Dictionary] = []
+static var _cards_by_id: Dictionary = {}
+
+
 static func catalog() -> Array[Dictionary]:
+	_ensure_catalog_cache()
+	var result: Array[Dictionary] = []
+	result.assign(_catalog_cache)
+	return result
+
+
+static func _ensure_catalog_cache() -> void:
+	if _catalog_cache_ready: return
+	_catalog_cache = _build_catalog()
+	for card in _catalog_cache:
+		_cards_by_id[str(card.get("id", ""))] = card
+	_freeze_collection(_catalog_cache)
+	_cards_by_id.make_read_only()
+	_catalog_cache_ready = true
+
+
+static func _freeze_collection(value: Variant) -> void:
+	if value is Dictionary:
+		var dictionary: Dictionary = value
+		for key in dictionary:
+			_freeze_collection(dictionary[key])
+		dictionary.make_read_only()
+	elif value is Array:
+		var array: Array = value
+		for item in array:
+			_freeze_collection(item)
+		array.make_read_only()
+
+
+static func _build_catalog() -> Array[Dictionary]:
 	var cards: Array[Dictionary] = []
 	for i in range(FIGHTERS.size()):
 		var f: Array = FIGHTERS[i]
@@ -251,13 +287,17 @@ static func enemy_deck() -> Array:
 	return ["rengoku_normal","rengoku_normal","rengoku_surge","rengoku_surge","susamaru_normal","susamaru_normal","susamaru_surge","susamaru_surge","yahaba_normal","yahaba_normal","support_2","support_2","support_3","support_3","support_6","support_7","support_11","support_5","support_9","support_9"]
 
 static func find_card(id: String) -> Dictionary:
-	for card in catalog():
-		if card.id == id:
-			return card.duplicate(true)
-	return {}
+	_ensure_catalog_cache()
+	var card: Dictionary = _cards_by_id.get(id, {})
+	return card.duplicate(true) if not card.is_empty() else {}
+
+
+static func has_card_id(id: String) -> bool:
+	_ensure_catalog_cache()
+	return _cards_by_id.has(id)
 
 static func migrate_card_id(old_id: String) -> String:
-	if not find_card(old_id).is_empty(): return old_id
+	if has_card_id(old_id): return old_id
 	var split: PackedStringArray = old_id.rsplit("_",true,1)
 	if split.size() == 2 and split[1].is_valid_int():
 		for fighter in FIGHTERS:
@@ -268,14 +308,16 @@ static func migrate_card_id(old_id: String) -> String:
 static func validate_deck(ids: Array) -> String:
 	if ids.size() != 20:
 		return "Your deck needs exactly 20 cards (%d/20)." % ids.size()
+	_ensure_catalog_cache()
 	var counts := {}
 	var basics := 0
 	for id in ids:
-		var card := find_card(str(id))
+		var card_id := str(id)
+		var card: Dictionary = _cards_by_id.get(card_id, {})
 		if card.is_empty():
 			return "This deck contains an unknown card."
-		counts[id] = counts.get(id,0)+1
-		if counts[id] > 2:
+		counts[card_id] = counts.get(card_id,0)+1
+		if counts[card_id] > 2:
 			return "At most two copies of each catalog card."
 		if is_basic(card):
 			basics += 1

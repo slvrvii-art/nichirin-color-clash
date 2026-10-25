@@ -72,3 +72,25 @@
 - [x] Start card-image loading with `ResourceLoader.load_threaded_request()`; deduplicate requests, update only still-matching live image nodes after completion, and avoid synchronous card-art loading during rendering.
 - [x] Bound asynchronous image polling/cache work so it runs only while requests are pending and does not cause unbounded texture memory growth.
 - [x] Remove eager preloads of unused legacy card-game art from `card_database.gd` while preserving legacy compatibility only if still referenced. Keep the required controller-script resource in `card_game.tscn`; remove no active scene dependency.
+
+
+## Optimization follow-up
+- [x] Build the 51-card catalog once on first access, index definitions by ID, recursively freeze cached definitions, and make deck validation perform direct indexed reads rather than rebuilding/copying the catalog per card. Keep mutable gameplay card instances isolated.
+- [x] Load the active PackedScene through `ResourceLoader.load_threaded_request()` with throttled progress polling; preserve the current loading/retry experience and never call `load_threaded_get()` before the resource is ready.
+- [x] Cap persisted JSON at 1 MiB and reject oversized save input/output while keeping valid primary/backup recovery intact.
+- [x] Recycle pooled UI children without duplicated child-array snapshots or scanning every inherited Control signal; clear `OptionButton` entries before rebuilding filters.
+- [x] Lazily cache normalized collection-search text and retain ascending catalog order, avoiding per-render string rebuilding/lowercasing and redundant sorting.
+
+## Performance review follow-up
+- [x] `_save()` returns its `Error`; the save wrapper records failures, retains pending/unsaved state, displays a retry notice, and only marks a match record saved after success.
+- [x] `battle_layout.gd` uses viewport and safe-inset inputs; `card_game.gd` applies one fit transform and uses mapped Active/Bench zones, with one guarded viewport-resize subscription.
+- [x] The `audio.muted` toggle applies to Godot's Master bus without overwriting bus volumes.
+- [x] Godot 4.7.2 smoke, match, atomic JSON, safe-area, layout integration, save-failure/retry, and audio-mute assertions pass. Direct local probes load the tested font, shader, and SpriteFrames resources.
+- [x] Replaced both collection/detail Add to Deck lambdas with bound void Callables; a regression emits the real buttons, verifies each adds one card within the 20-card cap, and the existing smoke test passes.
+- [ ] Identify the intermittent ObjectDB shutdown warning: the targeted interaction test passed but reported two leaked ObjectDB references in non-verbose mode and one RefCounted instance in verbose mode.
+- [ ] Managed packaging remains blocked: `npm run check` exits 1 because its frozen run cannot preload `res://assets/interface/attack_slash_frames.tres`, `res://assets/template/fonts/ui_regular.tres`, `ui_medium.tres`, and `display/card_title.tres`. A fresh no-argument `prepare-release` also failed its exported-PCK startup check on `ui_medium.tres`, `display/card_name.tres`, `Bungee-Regular.ttf`, and `surge_gold.gdshader`; asset reconciliation reported 168 tracked, 0 uploaded, and 0 restored. Direct Godot probes load every named resource from the local tree, and Bungee, Figtree, and ManusCC0 font bytes match `assets.lock.json`. The post-fix `preview:build` also failed on PCK preload errors and did not advance the preview generation, so the changed callback has only been verified natively. The previous `save-release` attempt stopped before committing. Do not save/push this pass until a supported snapshot-refresh path resolves the managed check.
+
+## User-supplied artwork update
+- [x] Applied the supplied PNG byte-for-byte to `assets/fighters/zenitsu_full.png` through the guarded asset-edit workflow; the lock digest/size match, and direct Godot threaded loading passed at 1080×1920.
+- [x] Verified `zenitsu_surge` resolves to `res://assets/fighters/zenitsu_full.png`; the actual `CardFace` threaded loader loads the supplied 1080×1920 texture.
+- [ ] Make the replacement visible in the managed Web preview: the served generation remains `2d84354f559e3c16d4dddf04de4b76449860c462d6113db0d4cc02cef4a09e33`. The latest `preview:build`, portable `npm run build`, and fresh `prepare-release` fail on frozen-Game-input resource preloads. The Zenitsu mapping and 23 referenced locked binary dependencies are verified locally; the required resource definitions/shader are tracked and the export preset uses `all_resources`. No supported project snapshot-sync operation is registered, so a provider-side frozen-input refresh is needed before rebuilding.
