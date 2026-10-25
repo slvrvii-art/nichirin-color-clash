@@ -10,9 +10,9 @@ Retain Red, Blue, Yellow, Green, Purple, Pink and White Color Types, one generat
 
 Apply Sleep, Poison, Burn and Paralysis only as defined effects on moves/abilities. Sleep blocks active attacks and retreat until a heads result on its controller's turn-start coin check clears it; tails leaves it. Poison deals 10 damage when its controller begins a turn and persists while active. Burn deals 20 at turn start, then its controller flips a coin; heads clears Burn, tails leaves it. Poison, Burn and Paralysis clear when that affected fighter retreats or a status-curing Item/Support resolves. Paralysis requires a pre-attack coin flip; heads permits damage and attack effects, while tails does zero damage and causes no attack effect. Statuses are visible, are conveyed in the How to Play rules and cannot linger on a discarded knockout.
 
-Install the user's supplied slash GIF as the attack-animation source, preserve the original asset, render its keyed transparent frame sequence once per attack, and keep damage and turn-change feedback distinct. Respect reduced-motion settings. Keep AI actions valid for Item/Support limits, statuses, cards, Energy and attacks.
+Install the user's supplied slash GIF as the attack-animation source, preserve the original asset, render its keyed transparent frame sequence once per attack, and keep damage and turn-change feedback distinct. A coin overlay must finish before an attack slash begins. Animate every Color Energy grant through a bounded CardGame Energy-flight queue and dedicated battle overlay. Derive endpoints from the current board nodes and apply the same safe-area fit transform as the battle board; respect reduced motion. Keep AI actions valid for Item/Support limits, statuses, cards, Energy and attacks.
 
-Save deck/presentation preferences and match records locally through the atomic JSON helper; migrate old fighter IDs to the corresponding Normal/SURGE cards while keeping a legal deck after migration.
+Save up to ten independent deck profiles, each with its own deck (maximum 20 cards) and selection of one to three Color Energy types. At each turn start, generate one Energy chosen at random from that deck's selected pool; retain the once-per-turn manual attachment rule. White Color Type fighters treat attack and retreat costs as Colorless, payable with any attached Energy colors. Save deck profiles, selected Energy pools, presentation preferences and match records locally through the atomic JSON helper; migrate old fighter IDs to the corresponding Normal/SURGE cards while keeping a legal deck after migration.
 
 ## Utility-card effects
 
@@ -22,35 +22,36 @@ Implement utility selection in the shared battle controller so player and AI eff
 
 After both shuffled opening hands are dealt, each side must start with an eligible Normal or standalone SURGE fighter chosen from that hand. The player chooses through the battle UI; the AI chooses from its own hand. Do not begin the first turn until the player confirms. If active damage Knocks Out a fighter while its controller has bench cards, prompt that controller to choose the replacement; resolve the AI's choice automatically and defer turn advancement until a human replacement is selected. Keep existing hand fallback and terminal conditions when no bench fighter can replace a knockout. Track own turns per side: paired SURGE Boosts require at least the owner's second turn and cannot happen on the Normal's play turn except for an explicit same-turn card-effect override; standalone SURGE cards remain normally playable.
 
-Route every coin result through the shared coin helper and display each with a queued, brief Nichirin/sun-crest flip overlay. Use the same coin for random first-player selection; separate outcome calculation from presentation so tests and game logic remain deterministic, and respect reduced-motion settings.
+Route every coin result through the shared coin helper and display each with a queued, brief Nichirin/sun-crest flip overlay. Use the same coin for random first-player selection; separate outcome calculation from presentation so tests and game logic remain deterministic, and respect reduced-motion settings. Serialize coin overlays and attack slashes so a pending coin always resolves visually before its related strike.
 
 ## Project structure
 
-- `scripts/card_game.gd`: hub, collection, deck builder, battle state, AI, card plays, turns, statuses, targeting, animations, persistence and UI.
+- `scripts/card_game.gd`: hub, collection, ten-profile deck builder, independent Energy pools, battle state, AI, card plays, turns, statuses, targeting, coin/attack sequencing, Energy-flight queue/overlay, persistence and UI.
 - `scripts/card_database.gd`: current 39 fighter cards, 4 Support cards, 8 Item cards, their effects, starter decks and compatibility mapping.
 - `scripts/coin_flip_animation.gd`: non-blocking, queued, reduced-motion-aware Nichirin coin animation and Heads/Tails display.
 - `scripts/battle_layout.gd`: board geometry and safe-canvas placement.
 - `scripts/card_face.gd`: Fighter/Support/Item face presentation, Normal/SURGE markers and selectable artwork.
+- `scripts/juice_director.gd`: reusable template particle, damage and audio effects; the current game-specific Energy-flight queue is driven by CardGame's Energy grants and mapped board nodes.
 - `assets/interface/attack_slash_frames.tres` plus supplied GIF-derived frames: one-shot attack animation; untouched source under `source-art/`.
-- `test/` and `scripts/smoke_test.gd`: bounded deck, card-type, status, attack, AI and rendered behavior checks.
+- `test/` and `scripts/smoke_test.gd`: bounded deck, card-type, status, Energy-pool, payment, attack-order, AI and rendered behavior checks.
 - `assets/fighters`, `assets/support`, `assets/interface`, `assets/share`, `web/` and `scenes/`: themed art, identity, loader and project scenes.
 
 ## Design
 
 Selected style: Taisho-era collector's cabinet, with midnight navy, warm ivory live text, muted gold borders and vermilion actions. Keep the battle board quiet, off-center and spacious with a left navigation rail and right contextual panel. Retain the sunrise sword crest, geometric card borders and bundled body/display fonts.
 
-Use the supplied slash GIF as the attack strike, smoothly keyed so its dark background is transparent over the board. The defender separately shakes and reddens, with floating damage numbers. Show compact legible status pills and turn-start coin outcomes. Turn changes retain their red/gold banner. Reduced-motion mode keeps the GIF cue brief and damage/status states visible.
+Use the supplied slash GIF as the attack strike, smoothly keyed so its dark background is transparent over the board. The defender separately shakes and reddens, with floating damage numbers. Show compact legible status pills and turn-start coin outcomes. Turn changes retain their red/gold banner. Energy grants use a small gold-colored flight cue from Energy source to fighter; coin overlays must clear before a strike starts. Reduced-motion mode keeps cues brief and damage/status states visible.
 
 ## Performance refactor
+
 Keep one long-lived game UI root and recycle child controls and card-face subtrees through a bounded pool; reset layout, visual state and signal connections before reuse. Centralize card-image requests in `card_face.gd` using deduplicated threaded loads, weak target references and path checks; a single short-interval timer in `card_game.gd` polls only while assets are pending, then stops. Bound the explicit texture cache, clear textures from pooled nodes, and replace eager legacy art preloads with lazy path-based compatibility only where dormant code still needs it. Preserve the required controller-script reference in the battle scene.
 
-
 ## Performance optimization follow-up
-Keep gameplay and deck validation on the main thread: the active deck is only 20 cards and the curated catalog is 51 definitions, so custom workers, locks and concurrent collections would add overhead without useful parallelism. Build the card catalog once on first access, freeze the cached definitions recursively, and maintain an ID index; return a shallow array view for display, copy one card only when gameplay needs a mutable instance, and validate directly against the index. Load the active PackedScene with `ResourceLoader.load_threaded_request()` and a single 50 ms progress poll, preserving the existing retry UI. Limit persisted JSON to 1 MiB before reading or writing to bound malformed-save memory and disk use. Retain the existing bounded UI-node and texture pools and weak target references.
 
+Keep gameplay and deck validation on the main thread: the active deck is only 20 cards and the curated catalog is 51 definitions, so custom workers, locks and concurrent collections would add overhead without useful parallelism. Build the card catalog once on first access, freeze the cached definitions recursively, and maintain an ID index; return a shallow array view for display, copy one card only when gameplay needs a mutable instance, and validate directly against the index. Load the active PackedScene with `ResourceLoader.load_threaded_request()` and a single 50 ms progress poll, preserving the existing retry UI. Limit persisted JSON to 1 MiB before reading or writing to bound malformed-save memory and disk use. Retain the existing bounded UI-node and texture pools and weak target references.
 
 For collection filtering, lazily cache normalized search text per immutable card and preserve the catalog's number order; each filter pass can then avoid rebuilding/lowercasing every card's fields and re-sorting an already ordered result.
 
-
 ## Zenitsu SURGE artwork replacement
+
 Replace only `assets/fighters/zenitsu_full.png` with the user-supplied image, byte-for-byte, via the guarded asset-edit candidate workflow. Preserve the resource path and update asset-lock content metadata only through the validated tool process; do not crop or recompress the image.

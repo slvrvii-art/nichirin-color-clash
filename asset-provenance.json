@@ -690,15 +690,29 @@
       "origin": "unknown",
       "referenceEvidence": [],
       "regions": [],
-      "sha256": "sha256:8bc059bbdacd89be23b56a6fc2de2fd9a7454b8c5480b7023843a656f34ef8ca",
+      "sha256": "sha256:34d033646b451e14a038267ef97f4fbe0279acf11a371cea68cd607f1ae8df01",
       "shipped": null,
-      "size": 843455,
+      "size": 2314309,
       "source": {},
       "status": "present",
       "transformations": [],
       "useEvidence": [],
       "used": false,
-      "usedBy": []
+      "usedBy": [],
+      "versions": {
+        "sha256:8bc059bbdacd89be23b56a6fc2de2fd9a7454b8c5480b7023843a656f34ef8ca": {
+          "generator": {},
+          "inputs": [],
+          "license": {},
+          "origin": "unknown",
+          "regions": [],
+          "sha256": "sha256:8bc059bbdacd89be23b56a6fc2de2fd9a7454b8c5480b7023843a656f34ef8ca",
+          "size": 843455,
+          "source": {},
+          "transformations": [],
+          "usedBy": []
+        }
+      }
     },
     "assets/fighters/zenitsu_full.png": {
       "declaredUseEvidence": [],

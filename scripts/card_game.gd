@@ -20,6 +20,9 @@ const GOLD := Color("#c8ac72")
 const MUTED := Color("#8e9aae")
 const RED := Color("#cf5145")
 const SAVE_PATH := "user://nichirin_collection_v1.json"
+const MAX_DECK_PROFILES := 10
+const MAX_DECK_ENERGY_TYPES := 3
+const MAX_PENDING_ENERGY_FLIGHTS := 12
 
 var screen_name := "home"
 var root_ui: Control
@@ -29,6 +32,10 @@ var catalog: Array[Dictionary] = []
 var cards_by_id := {}
 var search_text_by_id: Dictionary = {}
 var deck: Array = []
+var deck_profiles: Array[Dictionary] = []
+var current_deck_index := 0
+var deck_energy_types: Array = []
+var _save_path: String = SAVE_PATH
 var art_choices := {}
 var discovered: Array = []
 var full_art := true
@@ -78,6 +85,15 @@ var coin_flip_events := 0
 var coin_flip_animations := 0
 var coin_animation_queue: Array = []
 var coin_animation_running := false
+var attack_coin_wait_count := 0
+var energy_fx_root: Control
+var energy_fx_generation := 0
+var show_energy_animations := true
+var energy_animation_queue: Array = []
+var energy_animation_running := false
+var energy_animations_enqueued := 0
+var energy_animations_completed := 0
+var energy_animations_skipped := 0
 var attack_targeting := -1
 var retreat_targeting := false
 # Tests may force who goes first; -1 means a random coin flip.
@@ -91,6 +107,13 @@ func _ready() -> void:
 	coin_overlay = COIN_UI.new()
 	coin_overlay.layer = 40
 	add_child(coin_overlay)
+	energy_fx_root = Control.new()
+	energy_fx_root.name = "JuiceLayer"
+	energy_fx_root.size = LAYOUT.DESIGN_SIZE
+	energy_fx_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	energy_fx_root.clip_contents = false
+	energy_fx_root.z_index = 30
+	add_child(energy_fx_root)
 	var viewport := get_viewport()
 	if not viewport.size_changed.is_connected(_queue_battle_layout_refresh):
 		viewport.size_changed.connect(_queue_battle_layout_refresh)
@@ -106,6 +129,7 @@ func _ready() -> void:
 	_render()
 
 func _exit_tree() -> void:
+	_cancel_energy_flights()
 	if is_instance_valid(texture_poll_timer):
 		texture_poll_timer.stop()
 	if is_instance_valid(modal):
@@ -113,6 +137,8 @@ func _exit_tree() -> void:
 			modal.get_parent().remove_child(modal)
 		FACE.recycle_tree(modal)
 		modal = null
+	if is_instance_valid(energy_fx_root):
+		for effect in energy_fx_root.get_children(): effect.queue_free()
 	if is_instance_valid(root_ui):
 		FACE.recycle_children(root_ui)
 	FACE.clear_runtime_caches()
@@ -180,20 +206,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_go("home")
 
-func _load_save() -> void:
-	var saved := ATOMIC.load_dictionary(SAVE_PATH)
-	var saved_deck: Array = saved.get("deck",DB.starter_deck())
-	var cleaned: Array = []
-	for id in saved_deck:
-		var migrated_id: String = DB.migrate_card_id(str(id))
-		if cards_by_id.has(migrated_id) and cleaned.size() < 20 and cleaned.count(migrated_id) < 2:
-			cleaned.append(migrated_id)
-	deck = cleaned
-	if deck.size() < 20:
-		for fallback_id in DB.starter_deck():
-			if deck.size() >= 20: break
-			if deck.count(str(fallback_id)) < 2: deck.append(str(fallback_id))
-	if deck.size() != 20: deck = DB.starter_deck()
+func _load_save(path: String = "") -> void:
+	var save_target: String = _save_path if path.is_empty() else path
+	var saved := ATOMIC.load_dictionary(save_target)
+	deck_profiles.clear()
+	var profile_names: Array[String] = []
+	var stored_profiles: Variant = saved.get("decks",[])
+	if stored_profiles is Array:
+		for stored_value in stored_profiles:
+			if deck_profiles.size() >= MAX_DECK_PROFILES: break
+			if not stored_value is Dictionary: continue
+			var stored_profile: Dictionary = stored_value
+			var profile_name: String = str(stored_profile.get("name","")).strip_edges()
+			if profile_name.is_empty(): profile_name = _next_deck_profile_name(profile_names)
+			if profile_names.has(profile_name): profile_name = _next_deck_profile_name(profile_names)
+			profile_names.append(profile_name)
+			var profile_cards := _sanitize_deck_ids(stored_profile.get("cards",[]),false)
+			var profile_energy := _normalize_deck_energy_types(stored_profile.get("energy_types",[]),profile_cards)
+			deck_profiles.append({"name":profile_name,"cards":profile_cards,"energy_types":profile_energy})
+	if deck_profiles.is_empty():
+		var legacy_deck := _sanitize_deck_ids(saved.get("deck",DB.starter_deck()),true)
+		var legacy_energy := _normalize_deck_energy_types(saved.get("energy_types",[]),legacy_deck)
+		deck_profiles.append({"name":"Deck 1","cards":legacy_deck,"energy_types":legacy_energy})
+	current_deck_index = clampi(int(saved.get("current_deck_index",0)),0,deck_profiles.size()-1)
+	var active_profile: Dictionary = deck_profiles[current_deck_index]
+	deck = active_profile.get("cards",[]).duplicate()
+	deck_energy_types = active_profile.get("energy_types",[]).duplicate()
 	art_choices = saved.get("art_choices",{})
 	discovered = saved.get("discovered",deck.duplicate())
 	full_art = bool(saved.get("full_art",true))
@@ -201,13 +239,150 @@ func _load_save() -> void:
 	wins = int(saved.get("wins",0))
 	matches = int(saved.get("matches",0))
 
-func _save(path: String = SAVE_PATH) -> Error:
+func _sanitize_deck_ids(raw_ids: Variant, fill_starter: bool) -> Array:
+	var cleaned: Array = []
+	var source: Array = raw_ids if raw_ids is Array else []
+	for raw_id in source:
+		if cleaned.size() >= 20: break
+		var migrated_id: String = DB.migrate_card_id(str(raw_id))
+		if cards_by_id.has(migrated_id) and cleaned.count(migrated_id) < 2:
+			cleaned.append(migrated_id)
+	if fill_starter and cleaned.size() < 20:
+		for fallback_id in DB.starter_deck():
+			if cleaned.size() >= 20: break
+			if cleaned.count(str(fallback_id)) < 2: cleaned.append(str(fallback_id))
+	if fill_starter and cleaned.size() != 20: return DB.starter_deck()
+	return cleaned
+
+func _default_deck_energy_types(card_ids: Array) -> Array:
+	var result: Array = []
+	for card_id in card_ids:
+		var card: Dictionary = cards_by_id.get(str(card_id),{})
+		if str(card.get("kind","")) != "Fighter": continue
+		var color: String = str(card.get("color",""))
+		if DB.COLORS.has(color) and not result.has(color):
+			result.append(color)
+			if result.size() >= MAX_DECK_ENERGY_TYPES: break
+	if result.is_empty(): result.append("Blue")
+	return result
+
+func _normalize_deck_energy_types(raw_types: Variant, card_ids: Array) -> Array:
+	var result: Array = []
+	var source: Array = raw_types if raw_types is Array else []
+	for raw_color in source:
+		var color: String = str(raw_color)
+		if DB.COLORS.has(color) and not result.has(color) and result.size() < MAX_DECK_ENERGY_TYPES:
+			result.append(color)
+	if result.is_empty(): return _default_deck_energy_types(card_ids)
+	return result
+
+func _next_deck_profile_name(existing_names: Array) -> String:
+	for number in range(1,MAX_DECK_PROFILES+1):
+		var candidate := "Deck "+str(number)
+		if not existing_names.has(candidate): return candidate
+	return "Deck "+str(existing_names.size()+1)
+
+func _sync_active_deck_profile() -> void:
+	if deck_profiles.is_empty(): return
+	current_deck_index = clampi(current_deck_index,0,deck_profiles.size()-1)
+	var profile: Dictionary = deck_profiles[current_deck_index]
+	profile["cards"] = deck.duplicate()
+	profile["energy_types"] = deck_energy_types.duplicate()
+	deck_profiles[current_deck_index] = profile
+
+func _select_deck_profile(index: int, persist: bool = true) -> bool:
+	if index < 0 or index >= deck_profiles.size(): return false
+	if index == current_deck_index: return true
+	_sync_active_deck_profile()
+	current_deck_index = index
+	var profile: Dictionary = deck_profiles[current_deck_index]
+	deck = profile.get("cards",[]).duplicate()
+	deck_energy_types = profile.get("energy_types",[]).duplicate()
+	notice = "Selected "+str(profile.get("name","Deck"))+"."
+	if persist: _persist_save()
+	return true
+
+func _select_deck_profile_named(name: String) -> void:
+	for i in range(deck_profiles.size()):
+		if str(deck_profiles[i].get("name","")) == name:
+			_select_deck_profile(i)
+			_render()
+			return
+
+func _create_deck_profile() -> bool:
+	if deck_profiles.size() >= MAX_DECK_PROFILES:
+		notice = "You can save up to 10 decks."
+		return false
+	_sync_active_deck_profile()
+	var names: Array = []
+	for profile in deck_profiles: names.append(str(profile.get("name","")))
+	var profile_name := _next_deck_profile_name(names)
+	var new_profile := {"name":profile_name,"cards":deck.duplicate(),"energy_types":deck_energy_types.duplicate()}
+	deck_profiles.append(new_profile)
+	current_deck_index = deck_profiles.size()-1
+	deck = new_profile.cards.duplicate()
+	deck_energy_types = new_profile.energy_types.duplicate()
+	notice = profile_name+" created from the current deck."
+	_persist_save()
+	return true
+
+func _delete_active_deck_profile() -> bool:
+	if deck_profiles.size() <= 1:
+		notice = "Keep at least one saved deck."
+		return false
+	deck_profiles.remove_at(current_deck_index)
+	current_deck_index = mini(current_deck_index,deck_profiles.size()-1)
+	var profile: Dictionary = deck_profiles[current_deck_index]
+	deck = profile.get("cards",[]).duplicate()
+	deck_energy_types = profile.get("energy_types",[]).duplicate()
+	notice = "Deleted a deck profile."
+	_persist_save()
+	return true
+
+func _toggle_deck_energy_type(color: String) -> bool:
+	if not DB.COLORS.has(color): return false
+	if deck_energy_types.has(color):
+		if deck_energy_types.size() <= 1:
+			notice = "Choose at least one Energy color for this deck."
+			return false
+		deck_energy_types.erase(color)
+	else:
+		if deck_energy_types.size() >= MAX_DECK_ENERGY_TYPES:
+			notice = "Choose up to three Energy colors per deck."
+			return false
+		deck_energy_types.append(color)
+	notice = "Energy pool updated. One selected color generates at random each turn."
+	_persist_save()
+	return true
+
+func _on_deck_energy_type_pressed(color: String) -> void:
+	_toggle_deck_energy_type(color)
+	_render()
+
+func _on_new_deck_pressed() -> void:
+	_create_deck_profile()
+	_render()
+
+func _on_delete_deck_pressed() -> void:
+	_delete_active_deck_profile()
+	_render()
+
+func _restore_starter_deck() -> void:
+	deck = DB.starter_deck()
+	deck_energy_types = _default_deck_energy_types(deck)
+	notice = "Starter deck restored with its default Energy colors."
+	_persist_save()
+	_render()
+
+func _save(path: String = "") -> Error:
+	_sync_active_deck_profile()
+	var save_target: String = _save_path if path.is_empty() else path
 	return ATOMIC.save_dictionary(
-		path,
-		{"deck":deck,"art_choices":art_choices,"discovered":discovered,"full_art":full_art,"reduced_motion":reduced_motion,"wins":wins,"matches":matches}
+		save_target,
+		{"deck":deck,"decks":deck_profiles.duplicate(true),"current_deck_index":current_deck_index,"energy_types":deck_energy_types,"art_choices":art_choices,"discovered":discovered,"full_art":full_art,"reduced_motion":reduced_motion,"wins":wins,"matches":matches}
 	)
 
-func _persist_save(path: String = SAVE_PATH) -> bool:
+func _persist_save(path: String = "") -> bool:
 	return _record_save_result(_save(path))
 
 func _record_save_result(save_error: Error) -> bool:
@@ -229,6 +404,7 @@ func _record_save_result(save_error: Error) -> bool:
 func _go(screen: String) -> void:
 	if screen_name == "battle" and screen != "battle":
 		generation += 1
+		_cancel_energy_flights()
 		busy = false
 		battle_over = true
 		battle_started = false
@@ -244,6 +420,7 @@ func _go(screen: String) -> void:
 	notice = ""
 	selected_hand = -1
 	selected_board = -1
+	if is_instance_valid(energy_fx_root): energy_fx_root.visible = screen_name == "battle"
 	_render()
 	screen_changed.emit(screen)
 
@@ -257,6 +434,11 @@ func _render() -> void:
 	root_ui.position = battle_layout.fit_offset
 	root_ui.scale = Vector2.ONE * battle_layout.fit_scale
 	root_ui.visible = true
+	if is_instance_valid(energy_fx_root):
+		energy_fx_root.size = LAYOUT.DESIGN_SIZE
+		energy_fx_root.position = battle_layout.fit_offset
+		energy_fx_root.scale = Vector2.ONE * battle_layout.fit_scale
+		energy_fx_root.visible = screen_name == "battle"
 	board_nodes.clear()
 	var bg := FACE.acquire_ui_node("ColorRect") as ColorRect
 	bg.color = INK
@@ -347,7 +529,7 @@ func _filtered() -> Array[Dictionary]:
 
 func _collection() -> void:
 	var building: bool = screen_name == "deck"
-	_header("DECK BUILDER" if building else "CARD COLLECTION","A 20-card limit. Countless ways to draw your blade." if building else "Browse all %d cards. Normal fighters Boost into their full-art SURGE forms." % catalog.size())
+	_header("DECK BUILDER" if building else "CARD COLLECTION","20 cards per deck • save up to 10 decks • choose 1–3 Energy colors" if building else "Browse all %d cards. Normal fighters Boost into their full-art SURGE forms." % catalog.size())
 	var search := FACE.acquire_ui_node("LineEdit") as LineEdit
 	search.position = Vector2(155,140)
 	search.size = Vector2(283,43)
@@ -384,12 +566,33 @@ func _collection() -> void:
 
 func _deck_panel() -> void:
 	_panel(root_ui,Rect2(1080,136,322,690),PANEL,Color("#334158"),10)
-	_text(root_ui,"YOUR DECK",Rect2(1102,156,272,29),21,CREAM,DISPLAY)
-	_text(root_ui,"%d / 20 CARDS" % deck.size(),Rect2(1103,199,273,26),17,GOLD)
-	_text(root_ui,"Two copies per catalog card.",Rect2(1104,230,260,22),11,MUTED)
+	_text(root_ui,"DECKS  %d / %d" % [current_deck_index+1,deck_profiles.size()],Rect2(1102,153,147,29),17,CREAM,DISPLAY)
+	var new_deck_button := _button(root_ui,"NEW",Rect2(1251,151,56,31),_on_new_deck_pressed,deck_profiles.size()<MAX_DECK_PROFILES,10)
+	new_deck_button.name = "NewDeckButton"
+	new_deck_button.disabled = deck_profiles.size() >= MAX_DECK_PROFILES
+	var delete_deck_button := _button(root_ui,"DELETE",Rect2(1312,151,67,31),_on_delete_deck_pressed,false,9)
+	delete_deck_button.name = "DeleteDeckButton"
+	delete_deck_button.disabled = deck_profiles.size() <= 1
+	var profile_names: Array = []
+	for profile in deck_profiles: profile_names.append(str(profile.get("name","Deck")))
+	var selected_name: String = str(deck_profiles[current_deck_index].get("name","Deck 1")) if not deck_profiles.is_empty() else "Deck 1"
+	var profile_selector := _option(root_ui,profile_names,selected_name,Rect2(1102,190,278,35),Callable(self,"_select_deck_profile_named"))
+	profile_selector.name = "DeckProfileSelector"
+	_text(root_ui,"%d / 20 CARDS  •  2 COPIES EACH" % deck.size(),Rect2(1103,231,275,21),12,GOLD,MEDIUM)
+	_text(root_ui,"ENERGY COLORS  /  CHOOSE 1–3",Rect2(1103,254,275,17),9,MUTED,MEDIUM)
+	var energy_colors: Array = DB.COLORS.keys()
+	for i in range(energy_colors.size()):
+		var color: String = str(energy_colors[i])
+		var is_selected: bool = deck_energy_types.has(color)
+		var column: int = i % 3
+		var row: int = floori(float(i)/3.0)
+		var energy_button := _button(root_ui,("✓ " if is_selected else "")+color,Rect2(1102+column*92,276+row*28,88,24),Callable(self,"_on_deck_energy_type_pressed").bind(color),is_selected,8)
+		energy_button.name = "DeckEnergy_"+color.replace(" ","_")
+		energy_button.disabled = not is_selected and deck_energy_types.size() >= MAX_DECK_ENERGY_TYPES
+		energy_button.add_theme_color_override("font_color",CREAM if is_selected else DB.color_for(color))
 	var scroll := FACE.acquire_ui_node("ScrollContainer") as ScrollContainer
-	scroll.position = Vector2(1100,267)
-	scroll.size = Vector2(280,419)
+	scroll.position = Vector2(1100,366)
+	scroll.size = Vector2(280,327)
 	root_ui.add_child(scroll)
 	var list := FACE.acquire_ui_node("VBoxContainer") as VBoxContainer
 	list.custom_minimum_size.x = 265
@@ -406,8 +609,8 @@ func _deck_panel() -> void:
 		row.add_theme_color_override("font_color",DB.color_for(str(card.color)))
 		row.pressed.connect(func(): deck.erase(id); _persist_save(); _render())
 		list.add_child(row)
-	_button(root_ui,"RESTORE STARTER",Rect2(1101,705,278,41),func(): deck=DB.starter_deck(); _persist_save(); _render(),false,11)
-	_button(root_ui,"BATTLE WITH THIS DECK →",Rect2(1101,759,278,46),_start_battle,true,12)
+	_button(root_ui,"RESTORE STARTER",Rect2(1101,703,278,41),_restore_starter_deck,false,11)
+	_button(root_ui,"BATTLE WITH THIS DECK →",Rect2(1101,757,278,46),_start_battle,true,12)
 
 func _add_to_deck(id: String) -> void:
 	if deck.size() >= 20:
@@ -418,8 +621,8 @@ func _add_to_deck(id: String) -> void:
 		deck.append(id)
 		if not discovered.has(id):
 			discovered.append(id)
-			notice = "Added "+str(cards_by_id[id].name)+" to your deck."
-			_persist_save()
+		notice = "Added "+str(cards_by_id[id].name)+" to your deck."
+		_persist_save()
 	_render()
 
 func _close_modal_and_add_to_deck(id: String) -> void:
@@ -438,7 +641,7 @@ func _card_detail(id: String, in_play: Dictionary = {}) -> void:
 		else: form_line = "NORMAL  •  BASIC ART"+("  •  BOOSTS TO SURGE" if str(card.boosts_to)!="" else "")
 	_text(box,form_line,Rect2(363,92,430,24),12,GOLD,MEDIUM)
 	var color_line: String = "COLOR TYPE: "+str(card.color).to_upper()
-	if card.kind == "Fighter": color_line += "   •   %d HP   •   RETREAT %d ENERGY" % [int(card.hp),int(card.get("retreat_cost",1))]
+	if card.kind == "Fighter": color_line += "   •   %d HP   •   RETREAT %d ANY-COLOR ENERGY" % [int(card.hp),int(card.get("retreat_cost",1))]
 	_text(box,color_line,Rect2(364,120,418,24),12,DB.color_for(str(card.color)))
 	var y := 154
 	if str(card.get("ability_id",""))!="":
@@ -479,7 +682,7 @@ func _card_detail(id: String, in_play: Dictionary = {}) -> void:
 	_button(box,"+ ADD TO DECK",Rect2(363,592,219,43),Callable(self,"_close_modal_and_add_to_deck").bind(id),true,12)
 	_button(box,"CLOSE",Rect2(600,592,180,43),_close_modal,false,12)
 
-func _new_side(ids: Array) -> Dictionary:
+func _new_side(ids: Array, selected_energy_types: Array = []) -> Dictionary:
 	var pile: Array = []
 	for id in ids: pile.append(_make_unit(str(id)))
 	pile.shuffle()
@@ -494,11 +697,8 @@ func _new_side(ids: Array) -> Dictionary:
 	for i in range(mini(5,pile.size())): hand.append(pile.pop_front())
 	# Keep the starting Normal/standalone fighter in hand until its owner chooses it.
 	var active: Dictionary = {}
-	var types: Array = []
-	for id in ids:
-		var c: Dictionary = cards_by_id[str(id)]
-		if c.kind == "Fighter" and not types.has(c.color): types.append(c.color)
-	return {"deck":pile,"hand":hand,"active":active,"bench":[],"discard":[],"points":0,"energy_ready":false,"energy_color":"Blue","colors":types,"support_used":false,"retreated":false,"turns_taken":0}
+	var types: Array = _normalize_deck_energy_types(selected_energy_types,ids)
+	return {"deck":pile,"hand":hand,"active":active,"bench":[],"discard":[],"points":0,"energy_ready":false,"energy_color":str(types[0]),"energy_types":types.duplicate(),"colors":types.duplicate(),"support_used":false,"retreated":false,"turns_taken":0}
 
 func _start_battle() -> void:
 	var error := DB.validate_deck(deck)
@@ -508,7 +708,10 @@ func _start_battle() -> void:
 		_render()
 		return
 	generation += 1
-	sides = [_new_side(deck),_new_side(DB.enemy_deck())]
+	_cancel_energy_flights()
+	if is_instance_valid(energy_fx_root): energy_fx_root.visible = true
+	var rival_deck: Array = DB.enemy_deck()
+	sides = [_new_side(deck,deck_energy_types),_new_side(rival_deck,_default_deck_energy_types(rival_deck))]
 	screen_name = "battle"
 	current_side = _roll_first_side()
 	turn_number = 1
@@ -609,7 +812,7 @@ func _begin_turn(side_index: int) -> void:
 	side["retreat_discount"] = 0
 	if not side.active.is_empty(): side.active["ability_used"] = false
 	for unit in side.bench: unit["ability_used"] = false
-	var types: Array = side.colors
+	var types: Array = side.get("energy_types",side.get("colors",[]))
 	side.energy_color = types[rng.randi_range(0,types.size()-1)] if not types.is_empty() else "White"
 	_apply_turn_start_statuses(side_index)
 	if battle_over: return
@@ -627,7 +830,7 @@ func _complete_turn_start(side_index: int) -> void:
 	var side: Dictionary = sides[side_index]
 	if battle_over or side.active.is_empty(): return
 	if str(side.active.get("ability_id",""))=="kagura_dance":
-		side.active.energy.append("Red")
+		_grant_energy_to_unit(side_index,-1,"Red")
 		_log(str(side.active.short)+" uses Kagura Dance: +1 Red Energy.")
 	_draw_cards(side_index,1)
 	_log("You draw a card." if side_index == 0 else "Opponent draws a card.")
@@ -832,7 +1035,7 @@ func _battle_actions() -> void:
 	_text(root_ui,"Resolving…" if busy else "Attacking ends your turn.",Rect2(1132,195,250,24),12,MUTED)
 	if retreat_targeting and not me.active.is_empty():
 		_text(root_ui,"Retreat",Rect2(1131,245,246,58),20,CREAM,DISPLAY)
-		_text(root_ui,"Pay %d Energy from %s, then choose a bench fighter to switch into the active spot." % [_side_retreat_cost(0),me.active.short],Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+		_text(root_ui,"Pay %d Energy of any color from %s, then choose a bench fighter to switch into the active spot." % [_side_retreat_cost(0),me.active.short],Rect2(1132,310,245,80),14,CREAM,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 		_button(root_ui,"CANCEL",Rect2(1132,404,245,40),func(): retreat_targeting=false; _render(),false,11)
 	elif attack_targeting >= 0 and not me.active.is_empty():
 		var a: Dictionary = me.active.attacks[attack_targeting]
@@ -868,6 +1071,7 @@ func _battle_actions() -> void:
 		var status_text := _status_summary(unit)
 		_text(root_ui,"STATUS: "+(status_text if status_text!="" else "NONE"),Rect2(1132,333,245,18),9,_status_color(str(unit.statuses[0])) if not unit.get("statuses",[]).is_empty() else MUTED,MEDIUM)
 		_text(root_ui,"COLOR ENERGY",Rect2(1131,354,248,24),11,GOLD)
+		_text(root_ui,"DECK POOL: "+", ".join(me.get("energy_types",[])).to_upper(),Rect2(1132,374,245,15),8,MUTED,MEDIUM)
 		var attach := _button(root_ui,"ATTACH "+str(me.energy_color).to_upper()+"  +",Rect2(1131,388,246,45),func():
 			if _attach_energy(0,selected_board): _render(),false,12)
 		attach.add_theme_color_override("font_color",DB.color_for(str(me.energy_color)))
@@ -964,12 +1168,100 @@ func _attach_energy(side_index: int, target: int) -> bool:
 	if not side.energy_ready: return false
 	# The player who goes first cannot attach Energy on the duel's first turn.
 	if turn_number == 1: return false
-	if target>=side.bench.size(): return false
-	var unit: Dictionary = side.active if target<0 else side.bench[target]
-	unit.energy.append(side.energy_color)
+	if target < -1 or target>=side.bench.size(): return false
+	if not _grant_energy_to_unit(side_index,target,str(side.energy_color)): return false
 	side.energy_ready=false
+	var unit: Dictionary = side.active if target<0 else side.bench[target]
 	_log("%s receives %s Color Energy." % [unit.name,side.energy_color])
 	return true
+
+func _grant_energy_to_unit(side_index: int, target_index: int, color: String) -> bool:
+	if side_index < 0 or side_index >= sides.size() or not DB.COLORS.has(color): return false
+	var side: Dictionary = sides[side_index]
+	if target_index < -1 or target_index >= side.bench.size(): return false
+	var unit: Dictionary = side.active if target_index < 0 else side.bench[target_index]
+	if unit.is_empty(): return false
+	unit.energy.append(color)
+	_queue_energy_flight(side_index,target_index,color)
+	return true
+
+func _queue_energy_flight(side_index: int, target_index: int, color: String) -> void:
+	if not show_energy_animations or screen_name != "battle" or not is_instance_valid(energy_fx_root):
+		energy_animations_skipped += 1
+		return
+	if energy_animation_queue.size() >= MAX_PENDING_ENERGY_FLIGHTS:
+		energy_animations_skipped += 1
+		return
+	energy_animation_queue.append({"side":side_index,"target":target_index,"color":color})
+	energy_animations_enqueued += 1
+	if not energy_animation_running: call_deferred("_drain_energy_animation_queue")
+
+func _drain_energy_animation_queue() -> void:
+	if energy_animation_running or not is_instance_valid(energy_fx_root): return
+	energy_animation_running = true
+	var fx_token := energy_fx_generation
+	var game_token := generation
+	while not energy_animation_queue.is_empty():
+		var event: Dictionary = energy_animation_queue.pop_front()
+		var coin_complete: bool = await _wait_for_coin_animations(game_token)
+		if fx_token != energy_fx_generation or not coin_complete: return
+		if screen_name != "battle" or board_nodes.is_empty():
+			energy_animations_skipped += 1
+			continue
+		var side_index: int = int(event.get("side",0))
+		var target_index: int = int(event.get("target",-1))
+		var target_node: Control = board_nodes.get(str(side_index)+"_"+str(target_index))
+		if not is_instance_valid(target_node):
+			energy_animations_skipped += 1
+			continue
+		var source_position := Vector2(1254,410)
+		if side_index == 1:
+			var source_node: Control = board_nodes.get("1_-1")
+			if is_instance_valid(source_node): source_position = source_node.position+Vector2(source_node.size.x*0.5,source_node.size.y+34)
+		var destination_position: Vector2 = target_node.position+target_node.size*0.5-Vector2(15,15)
+		var gem := PanelContainer.new()
+		gem.name = "EnergyFlight"
+		gem.position = source_position-Vector2(15,15)
+		gem.size = Vector2(30,30)
+		gem.z_index = 2
+		gem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var style := StyleBoxFlat.new()
+		style.bg_color = DB.color_for(str(event.get("color","White")))
+		style.border_color = CREAM
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(15)
+		gem.add_theme_stylebox_override("panel",style)
+		energy_fx_root.add_child(gem)
+		var label := Label.new()
+		label.text = str(event.get("color","W")).left(1)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color",INK)
+		label.add_theme_font_size_override("font_size",14)
+		gem.add_child(label)
+		label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var duration := 0.18 if reduced_motion else 0.48
+		var flight_tween := create_tween().set_parallel()
+		flight_tween.tween_property(gem,"position",destination_position,duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		flight_tween.tween_property(gem,"modulate:a",0.0,duration)
+		await flight_tween.finished
+		if is_instance_valid(gem): gem.queue_free()
+		if fx_token != energy_fx_generation: return
+		energy_animations_completed += 1
+	energy_animation_running = false
+
+func _cancel_energy_flights() -> void:
+	energy_fx_generation += 1
+	energy_animation_queue.clear()
+	energy_animation_running = false
+	if is_instance_valid(energy_fx_root):
+		for effect in energy_fx_root.get_children(): effect.queue_free()
+
+func _wait_for_coin_animations(game_token: int) -> bool:
+	if not show_coin_flip_animations: return generation == game_token
+	while (coin_animation_running or not coin_animation_queue.is_empty()) and generation == game_token:
+		await get_tree().process_frame
+	return generation == game_token
 
 func _play_card(side_index: int, index: int) -> bool:
 	if not _can_act(side_index): return false
@@ -1017,7 +1309,7 @@ func _apply_utility_effect(side_index: int, card: Dictionary) -> void:
 		"coin_energy":
 			if _flip_coin():
 				var color: String = str(side.get("energy_color","White"))
-				side.active.energy.append(color)
+				_grant_energy_to_unit(side_index,-1,color)
 				_log("Heads! %s generates and attaches 1 %s Color Energy from the Energy Zone." % [side.active.short,color])
 			else:
 				_log("Tails! Recovery Breathing generates no Energy.")
@@ -1155,7 +1447,7 @@ func _attach_blue_energy_until_tails(side_index: int, target_index: int) -> void
 	if str(target.get("color",""))!="Blue": return
 	var heads := 0
 	while _flip_coin():
-		target.energy.append("Blue")
+		_grant_energy_to_unit(side_index,target_index,"Blue")
 		heads+=1
 	_log("Urokodaki's Lesson: %s flips %d heads, then tails; attach %d Blue Energy." % [target.name,heads,heads])
 
@@ -1297,6 +1589,7 @@ func _attack_legal(side_index: int, attack_index: int) -> bool:
 	if unit.is_empty() or attack_index<0 or attack_index>=unit.attacks.size(): return false
 	if unit.get("statuses",[]).has("Sleep"): return false
 	var attack: Dictionary = unit.attacks[attack_index]
+	if str(unit.get("color","")) == "White": return unit.energy.size() >= int(attack.cost)
 	var matching: int = unit.energy.count(unit.color)
 	return unit.energy.size()>=int(attack.cost) and matching>=int(attack.get("color_cost",1))
 
@@ -1431,10 +1724,17 @@ func _player_attack(index: int) -> void:
 	_animated_attack(0,index)
 
 func _animated_attack(side_index: int, index: int, target_index: int = -1) -> void:
-	var attack_hits := _attack_coin_allows(side_index)
 	var token := generation
 	busy=true
 	attack_animations+=1
+	var attack_hits := _attack_coin_allows(side_index)
+	if show_coin_flip_animations and (coin_animation_running or not coin_animation_queue.is_empty()): attack_coin_wait_count += 1
+	var coin_complete: bool = await _wait_for_coin_animations(token)
+	if generation != token: return
+	if not coin_complete:
+		busy = false
+		_render()
+		return
 	var opponent_side: int = 1-side_index
 	var source: Control = board_nodes.get(str(side_index)+"_-1")
 	var target: Control = board_nodes.get(str(opponent_side)+"_"+str(target_index))
@@ -1587,8 +1887,9 @@ func _cost_text(color: String, a: Dictionary) -> String:
 	var cost: int = int(a.cost)
 	var color_cost: int = int(a.get("color_cost",1))
 	if cost <= 0: return "NO ENERGY"
+	if color == "White": return "%d COLORLESS ENERGY  •  ANY COLOR" % cost
 	if color_cost >= cost: return "%d %s ENERGY" % [cost,color.to_upper()]
-	return "%d ENERGY (%d %s)" % [cost,color_cost,color.to_upper()]
+	return "%d ENERGY (%d %s, %d ANY COLOR)" % [cost,color_cost,color.to_upper(),cost-color_cost]
 
 func _make_unit(id: String) -> Dictionary:
 	var unit: Dictionary = cards_by_id[id].duplicate(true)
@@ -1778,7 +2079,7 @@ func _result_modal() -> void:
 func _rules() -> void:
 	var box := _modal_box(Rect2(379,94,835,726))
 	_text(box,"THE WAY OF THE BLADE",Rect2(35,30,765,47),29,CREAM,DISPLAY)
-	var rules := "Build exactly 20 cards, at most two copies of each. Each player has one Active Fighter and exactly three bench spots. A Nichirin coin flip decides who goes first. Before the first turn begins, you choose a Normal or standalone SURGE fighter from your starting hand for your Active spot; your rival chooses their own. No Energy can be attached on the duel's first turn. Draw one card and gain one Color Energy each turn; attach it once. Attack costs show how much Energy must match the fighter's Color Type.\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. You can Boost a paired SURGE only from your second turn onward, and not on the turn its Normal was played unless a card effect explicitly permits it. Standalone SURGE cards (with no Normal version) may be played normally, even on the first turn.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn: discard Energy from your active fighter (Normal 1, SURGE 2) and switch it with a benched fighter. When an Active Fighter is Knocked Out, its owner chooses a fighter from their Bench to replace it; the rival AI makes its own choice.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
+	var rules := "Build exactly 20 cards, at most two copies of each, and save up to 10 different decks. Each player has one Active Fighter and exactly three bench spots. In the deck builder, choose one to three Color Energy types for each deck. A Nichirin coin flip decides who goes first. Before the first turn begins, you choose a Normal or standalone SURGE fighter from your starting hand for your Active spot; your rival chooses their own. No Energy can be attached on the duel's first turn. Draw one card and generate one Color Energy each turn, chosen at random from your deck's selected Energy pool; attach it once. Non-White fighters need the matching Color Energy shown by their attacks. White Color Type fighters' attack costs are colorless: any combination of Energy colors can pay the full cost. Retreat costs are also colorless; discard any Energy colors (Normal 1, SURGE 2).\n\nBOOST: Normal fighters use basic art and have one attack. Their full-art SURGE forms cannot be played on their own: select the SURGE card in your hand and Boost it onto its matching Normal card in play. It keeps the attached Energy and damage taken, and its status conditions clear. You can Boost a paired SURGE only from your second turn onward, and not on the turn its Normal was played unless a card effect explicitly permits it. Standalone SURGE cards (with no Normal version) may be played normally, even on the first turn.\n\nUse any number of Items each turn, but only one Support. Active abilities work once per turn; passive abilities are always on. Only your active fighter attacks, and attacking ends your turn. Use End Turn to pass. Retreat once per turn. When an Active Fighter is Knocked Out, its owner chooses a fighter from their Bench to replace it; the rival AI makes its own choice.\n\nSTATUS EFFECTS: Sleep — flip at turn start; heads wakes it. A sleeping fighter can't attack or retreat. Poison — 10 damage at its owner's turn start. Burn — 20 damage at turn start, then flip; heads removes it. Paralysis — flip before attacking; tails means 0 damage and no effect. Retreating clears Poison, Burn and Paralysis, as do status-curing Items and Supports.\n\nA knockout scores 1 point, or 2 for a SURGE fighter. First to 3 points wins."
 	_text(box,rules,Rect2(37,92,760,560),14,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 	_button(box,"DRAW YOUR BLADE",Rect2(35,660,765,43),_close_modal,true,13)
 
@@ -1903,8 +2204,9 @@ func _image(parent: Control, path: String, rect: Rect2, tint: Color = Color.WHIT
 	_start_texture_poll()
 	return image
 
-func _option(parent: Control, values: Array, selected: String, rect: Rect2, action: Callable) -> void:
+func _option(parent: Control, values: Array, selected: String, rect: Rect2, action: Callable) -> OptionButton:
 	var option := FACE.acquire_ui_node("OptionButton") as OptionButton
+	option.clear()
 	option.position=rect.position
 	option.size=rect.size
 	option.add_theme_font_size_override("font_size",13)
@@ -1913,3 +2215,4 @@ func _option(parent: Control, values: Array, selected: String, rect: Rect2, acti
 		if values[i]==selected: option.select(i)
 	option.item_selected.connect(func(index): action.call(str(values[index])))
 	parent.add_child(option)
+	return option

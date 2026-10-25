@@ -87,10 +87,27 @@
 - [x] The `audio.muted` toggle applies to Godot's Master bus without overwriting bus volumes.
 - [x] Godot 4.7.2 smoke, match, atomic JSON, safe-area, layout integration, save-failure/retry, and audio-mute assertions pass. Direct local probes load the tested font, shader, and SpriteFrames resources.
 - [x] Replaced both collection/detail Add to Deck lambdas with bound void Callables; a regression emits the real buttons, verifies each adds one card within the 20-card cap, and the existing smoke test passes.
-- [ ] Identify the intermittent ObjectDB shutdown warning: the targeted interaction test passed but reported two leaked ObjectDB references in non-verbose mode and one RefCounted instance in verbose mode.
+- [ ] Review non-failing UI cleanup warnings: one match run discarded a stale freed pooled Panel; the Add-to-Deck regression reported two ObjectDB references at shutdown (one RefCounted instance in verbose mode). All gameplay assertions passed.
 - [ ] Managed packaging remains blocked: `npm run check` exits 1 because its frozen run cannot preload `res://assets/interface/attack_slash_frames.tres`, `res://assets/template/fonts/ui_regular.tres`, `ui_medium.tres`, and `display/card_title.tres`. A fresh no-argument `prepare-release` also failed its exported-PCK startup check on `ui_medium.tres`, `display/card_name.tres`, `Bungee-Regular.ttf`, and `surge_gold.gdshader`; asset reconciliation reported 168 tracked, 0 uploaded, and 0 restored. Direct Godot probes load every named resource from the local tree, and Bungee, Figtree, and ManusCC0 font bytes match `assets.lock.json`. The post-fix `preview:build` also failed on PCK preload errors and did not advance the preview generation, so the changed callback has only been verified natively. The previous `save-release` attempt stopped before committing. Do not save/push this pass until a supported snapshot-refresh path resolves the managed check.
 
 ## User-supplied artwork update
 - [x] Applied the supplied PNG byte-for-byte to `assets/fighters/zenitsu_full.png` through the guarded asset-edit workflow; the lock digest/size match, and direct Godot threaded loading passed at 1080×1920.
 - [x] Verified `zenitsu_surge` resolves to `res://assets/fighters/zenitsu_full.png`; the actual `CardFace` threaded loader loads the supplied 1080×1920 texture.
 - [ ] Make the replacement visible in the managed Web preview: the served generation remains `2d84354f559e3c16d4dddf04de4b76449860c462d6113db0d4cc02cef4a09e33`. The latest `preview:build`, portable `npm run build`, and fresh `prepare-release` fail on frozen-Game-input resource preloads. The Zenitsu mapping and 23 referenced locked binary dependencies are verified locally; the required resource definitions/shader are tracked and the export preset uses `all_resources`. No supported project snapshot-sync operation is registered, so a provider-side frozen-input refresh is needed before rebuilding.
+
+
+## Deck, Color Energy, and animation update
+- [x] Deck builder supports up to 10 saved, independently selectable deck profiles. Each profile retains its own deck of at most 20 cards and its own Energy-color selection; users can create, select and delete profiles.
+- [x] Each deck can select 1–3 Color Energy types from Red, Blue, Yellow, Green, Purple, Pink and White. One Energy color is selected at random from that profile's pool at turn start; the once-per-turn manual attachment rule remains.
+- [x] White Color Type fighters treat attack and retreat costs as Colorless, payable with any attached Energy colors; attack legality, retreat payment and player-facing cost text use the same rule.
+- [x] Coin-flip animation resolves before the related attack slash begins. Every Energy grant/attachment routes through the shared grant helper and can show a bounded flight to its target card, respecting reduced-motion settings.
+- [x] Godot parser, focused deck/Energy test, smoke, match, Add-to-Deck, save-retry and atomic JSON checks pass; a stale pooled-node warning and test-only ObjectDB shutdown references remain noted above.
+- [ ] Managed check, Web preview rebuild and checkpoint remain blocked by the frozen-PCK font/shader/resource preload failure recorded above; source-level tests do not update the served generation.
+
+## GitHub source update — October 25, 2026
+
+This repository update includes the current ten-deck builder, per-deck selection of one to three Color Energy types, White fighter Colorless costs, coin-before-attack sequencing, Energy-flight effects, related tests, and artwork edit history. Both selected Zenitsu image files are present and match the project source. All 168 locked asset files are present with matching checksums. The GitHub-specific self-contained asset ignore rules and independent GitHub artwork commits are preserved.
+
+Native Godot 4.7.2 import, deck/Energy regression, smoke, Add-to-Deck callback, and save-failure/retry checks passed in an isolated checkout. The Add-to-Deck test still emitted one non-failing ObjectDB shutdown warning. This is a source backup only: no newer compiled PCK/WASM or Manus checkpoint was produced. Existing exported files remain historical and do not represent the latest source.
+
+The managed check and preview build remain blocked by resource preload errors. A newer read-only diagnostic successfully loaded the named resources from an older retained PCK in an empty project directory; that PCK contains an older controller. Consequently, missing files in the current frozen input remain an unconfirmed explanation rather than an established root cause. The earlier instruction not to save/push refers to the managed release pipeline, not this explicitly requested GitHub source backup.
