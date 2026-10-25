@@ -128,6 +128,9 @@ static func _pool_kind(control: Control) -> String:
 	return control.get_class()
 
 static func _reset_control(control: Control) -> void:
+	_disconnect_signal(control, &"mouse_entered")
+	_disconnect_signal(control, &"mouse_exited")
+	control.name = _pool_kind(control)
 	if control is LineEdit:
 		_disconnect_signal(control, &"text_changed")
 		_disconnect_signal(control, &"text_submitted")

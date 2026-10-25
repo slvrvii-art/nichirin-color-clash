@@ -24,11 +24,18 @@ After both shuffled opening hands are dealt, each side must start with an eligib
 
 Route every coin result through the shared coin helper and display each with a queued, brief Nichirin/sun-crest flip overlay. Use the same coin for random first-player selection; separate outcome calculation from presentation so tests and game logic remain deterministic, and respect reduced-motion settings. Serialize coin overlays and attack slashes so a pending coin always resolves visually before its related strike.
 
+## Card-use reveals and opponent hand hover
+
+For actual player and rival card uses, briefly show the card enlarged in the center of the battlefield, using its real Normal/SURGE face and an owner/action caption. Use the supplied GIF as a timing reference rather than shipping it as gameplay media. Reuse a single input-transparent reveal overlay, fit it to live board coordinates, and retain a readable short fade in reduced-motion mode. Fighter placements, Boosts, utility plays, active abilities and attacks commit their effects only after their reveal finishes; serialize subsequent coin, Energy and attack visuals. Lock other battle actions while presentation or its targeting/effects resolve, and cancel pending actions on leaving or restarting a duel. Keep synchronous rule helpers separate from the animated player/AI action entry points.
+
+Hovering the rival's face-down hand shows a numeric count from the current hand array, including zero cards. Keep card identities hidden; refresh the count after draws, plays and hand-changing effects, and reset hover connections/text when pooled controls are reused.
+
 ## Project structure
 
 - `scripts/card_game.gd`: hub, collection, ten-profile deck builder, independent Energy pools, battle state, AI, card plays, turns, statuses, targeting, coin/attack sequencing, Energy-flight queue/overlay, persistence and UI.
 - `scripts/card_database.gd`: current 39 fighter cards, 4 Support cards, 8 Item cards, their effects, starter decks and compatibility mapping.
 - `scripts/coin_flip_animation.gd`: non-blocking, queued, reduced-motion-aware Nichirin coin animation and Heads/Tails display.
+- `scripts/card_play_animation.gd`: single reusable, field-centered enlarged-card reveal, live geometry, cancellation-safe tween and owner/action captions; CardGame defers authoritative effects until it finishes.
 - `scripts/battle_layout.gd`: board geometry and safe-canvas placement.
 - `scripts/card_face.gd`: Fighter/Support/Item face presentation, Normal/SURGE markers and selectable artwork.
 - `scripts/juice_director.gd`: reusable template particle, damage and audio effects; the current game-specific Energy-flight queue is driven by CardGame's Energy grants and mapped board nodes.

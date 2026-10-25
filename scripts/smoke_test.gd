@@ -214,7 +214,12 @@ func _run() -> void:
 	foe.bench[1].current_hp = 50
 	expect(game._ability_target_options(0,0)==[1],"only damaged bench fighters are targets")
 	game._begin_ability_targeting(0,0)
-	expect(game._choose_ability_target(1),"Rapid Drumming resolves")
+	expect(game._choose_ability_target(1),"Rapid Drumming starts its card-use reveal")
+	var ability_wait := 0.0
+	while game.card_action_running and ability_wait < 2.0:
+		await create_timer(0.01).timeout
+		ability_wait += 0.01
+	expect(not game.card_action_running,"ability presentation completes before subsequent actions")
 	expect(foe.active.id=="susamaru_normal" and foe.bench[1].id=="rengoku_normal","damaged fighter moved to active")
 	expect(not game._activate_ability(0,0,1),"ability once per turn")
 	# Aoi Butterfly Support adds 20 to Poison on the opponent

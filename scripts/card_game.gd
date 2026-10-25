@@ -10,6 +10,7 @@ const ATOMIC := preload("res://scripts/atomic_json_file.gd")
 const LICENSES := preload("res://scripts/manus/open_source_licenses.gd")
 const ATTACK_SLASH_FRAMES := preload("res://assets/interface/attack_slash_frames.tres")
 const COIN_UI := preload("res://scripts/coin_flip_animation.gd")
+const CARD_PLAY_UI := preload("res://scripts/card_play_animation.gd")
 const BODY := preload("res://assets/template/fonts/ui_regular.tres")
 const MEDIUM := preload("res://assets/template/fonts/ui_medium.tres")
 const DISPLAY := preload("res://assets/template/fonts/display/card_title.tres")
@@ -101,12 +102,23 @@ var first_side_override := -1
 var pending_boost_flash := ""
 var boost_animations := 0
 
+var card_play_overlay: CanvasLayer
+var show_card_play_animations := true
+var card_action_running := false
+var card_reveal_running := false
+var card_reveals_started := 0
+var card_reveals_completed := 0
+var opponent_hand_count_label: Label
+
 func _ready() -> void:
 	TranslationServer.set_locale("en")
 	rng.randomize()
 	coin_overlay = COIN_UI.new()
 	coin_overlay.layer = 40
 	add_child(coin_overlay)
+	card_play_overlay = CARD_PLAY_UI.new()
+	card_play_overlay.layer = 35
+	add_child(card_play_overlay)
 	energy_fx_root = Control.new()
 	energy_fx_root.name = "JuiceLayer"
 	energy_fx_root.size = LAYOUT.DESIGN_SIZE
@@ -129,6 +141,8 @@ func _ready() -> void:
 	_render()
 
 func _exit_tree() -> void:
+	generation += 1
+	_cancel_card_presentation()
 	_cancel_energy_flights()
 	if is_instance_valid(texture_poll_timer):
 		texture_poll_timer.stop()
@@ -175,6 +189,7 @@ func _apply_battle_layout(viewport_size: Vector2, safe_insets: Vector4) -> void:
 	if is_instance_valid(root_ui):
 		root_ui.position = battle_layout.fit_offset
 		root_ui.scale = Vector2.ONE * battle_layout.fit_scale
+		_configure_card_reveal_field()
 
 func _queue_battle_layout_refresh() -> void:
 	if _layout_refresh_scheduled:
@@ -404,6 +419,7 @@ func _record_save_result(save_error: Error) -> bool:
 func _go(screen: String) -> void:
 	if screen_name == "battle" and screen != "battle":
 		generation += 1
+		_cancel_card_presentation()
 		_cancel_energy_flights()
 		busy = false
 		battle_over = true
@@ -425,6 +441,7 @@ func _go(screen: String) -> void:
 	screen_changed.emit(screen)
 
 func _render() -> void:
+	opponent_hand_count_label = null
 	if is_instance_valid(root_ui):
 		FACE.recycle_children(root_ui)
 	else:
@@ -434,6 +451,7 @@ func _render() -> void:
 	root_ui.position = battle_layout.fit_offset
 	root_ui.scale = Vector2.ONE * battle_layout.fit_scale
 	root_ui.visible = true
+	_configure_card_reveal_field()
 	if is_instance_valid(energy_fx_root):
 		energy_fx_root.size = LAYOUT.DESIGN_SIZE
 		energy_fx_root.position = battle_layout.fit_offset
@@ -708,6 +726,7 @@ func _start_battle() -> void:
 		_render()
 		return
 	generation += 1
+	_cancel_card_presentation()
 	_cancel_energy_flights()
 	if is_instance_valid(energy_fx_root): energy_fx_root.visible = true
 	var rival_deck: Array = DB.enemy_deck()
@@ -847,6 +866,10 @@ func _drain_coin_animation_queue() -> void:
 	if coin_animation_running or not show_coin_flip_animations or not is_instance_valid(coin_overlay): return
 	coin_animation_running = true
 	while not coin_animation_queue.is_empty():
+		var reveal_complete: bool = await _wait_for_card_reveal(generation)
+		if not reveal_complete:
+			coin_animation_running = false
+			return
 		var heads: bool = bool(coin_animation_queue.pop_front())
 		coin_flip_animations += 1
 		await coin_overlay.play(heads,reduced_motion)
@@ -939,8 +962,19 @@ func _battle() -> void:
 		_text(root_ui,("YOU" if side_index==0 else "RIVAL")+"  DECK %d • HAND %d • DISCARD %d" % [side.deck.size(),side.hand.size(),side.discard.size()],Rect2(169,314+side_index*17,195,16),9,CREAM if side_index==0 else RED,MEDIUM)
 	_panel(root_ui,Rect2(169,355,187,1),Color("#28364c"),Color.TRANSPARENT,0)
 	_text(root_ui,"\n\n".join(battle_log.slice(maxi(0,battle_log.size()-5))),Rect2(169,366,187,290),12,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
+	var hand_hover := _panel(root_ui,Rect2(910,102,164,74),Color.TRANSPARENT,Color.TRANSPARENT,0)
+	hand_hover.name = "OpponentHandHover"
+	hand_hover.mouse_filter = Control.MOUSE_FILTER_STOP
+	hand_hover.tooltip_text = "%d cards in opponent's hand" % enemy.hand.size()
 	for i in range(mini(5,enemy.hand.size())):
-		_image(root_ui,"res://assets/interface/card_back.png",Rect2(924+i*20,110,27,40))
+		_image(hand_hover,"res://assets/interface/card_back.png",Rect2(14+i*20,8,27,40))
+	if enemy.hand.is_empty():
+		_text(hand_hover,"EMPTY HAND",Rect2(0,13,164,27),10,MUTED,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
+	opponent_hand_count_label = _text(hand_hover,"%d CARDS" % enemy.hand.size(),Rect2(0,49,164,24),12,GOLD,MEDIUM,HORIZONTAL_ALIGNMENT_CENTER)
+	opponent_hand_count_label.name = "OpponentHandCount"
+	opponent_hand_count_label.visible = false
+	hand_hover.mouse_entered.connect(_show_opponent_hand_count)
+	hand_hover.mouse_exited.connect(_hide_opponent_hand_count)
 	var hand_title := "YOUR STARTING HAND  /  choose a fighter for Active" if opening_active_pending else ("STARTING CHOICE COMPLETE" if not battle_started else "YOUR HAND  /  click a card to play")
 	_text(root_ui,hand_title,Rect2(154,711,900,24),11,GOLD)
 	var hand: Array = me.hand
@@ -951,6 +985,15 @@ func _battle() -> void:
 		if selected_hand==i: node.modulate=Color(1.15,1.12,0.9)
 	_battle_actions()
 	if battle_over: _result_modal()
+
+func _show_opponent_hand_count() -> void:
+	if sides.size() < 2 or not is_instance_valid(opponent_hand_count_label): return
+	var count: int = sides[1].hand.size()
+	opponent_hand_count_label.text = "%d CARD%s" % [count,"" if count == 1 else "S"]
+	opponent_hand_count_label.visible = true
+
+func _hide_opponent_hand_count() -> void:
+	if is_instance_valid(opponent_hand_count_label): opponent_hand_count_label.visible = false
 
 func _hand_clicked(index: int) -> void:
 	if opening_active_pending:
@@ -1055,13 +1098,13 @@ func _battle_actions() -> void:
 				var target_index: int = targets[j]
 				var ready: bool = _boost_ready(0,target_index)
 				var wait_text := "SECOND TURN REQUIRED" if int(me.get("turns_taken",0))<2 else "NEXT TURN"
-				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1))+(("" if ready else "  •  "+wait_text)),Rect2(1132,462+j*48,245,42),func(): _player_boost(target_index),ready,11 if ready else 9)
+				var boost_button := _button(root_ui,"BOOST "+("ACTIVE" if target_index<0 else "BENCH "+str(target_index+1))+(("" if ready else "  •  "+wait_text)),Rect2(1132,462+j*48,245,42),Callable(self,"_player_boost").bind(target_index),ready,11 if ready else 9)
 				boost_button.disabled = not _can_act(0) or not ready
 			if not targets.is_empty() and not _boost_ready(0,int(targets[0])) and targets.size()==1:
 				_text(root_ui,"Paired SURGE forms unlock on your second turn and cannot Boost on the Normal's play turn.",Rect2(1132,512,245,45),10,MUTED,BODY,HORIZONTAL_ALIGNMENT_LEFT,true)
 		else:
 			var play_label := "PLACE ON BENCH" if card.kind=="Fighter" else ("USE ITEM" if card.kind=="Item" else "USE SUPPORT")
-			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),func(): _player_play(),true,12)
+			var play := _button(root_ui,play_label,Rect2(1132,474,245,49),Callable(self,"_player_play"),true,12)
 			play.disabled = not _can_act(0) or (card.kind=="Support" and me.support_used) or (card.kind=="Fighter" and me.bench.size()>=3) or not _utility_can_play(0,selected_hand)
 		_button(root_ui,"← ACTIVE FIGHTER",Rect2(1132,664,245,38),func(): selected_hand=-1; selected_board=-1; _render(),false,11)
 	elif not me.active.is_empty():
@@ -1110,7 +1153,7 @@ func _battle_actions() -> void:
 	_button(root_ui,"PAUSE / LEAVE",Rect2(1130,798,247,33),_pause_menu,false,10)
 
 func _can_act(side: int) -> bool:
-	return screen_name=="battle" and battle_started and not opening_active_pending and pending_replacement_side<0 and current_side==side and not busy and not battle_over and not paused
+	return screen_name=="battle" and battle_started and not opening_active_pending and pending_replacement_side<0 and current_side==side and not busy and not card_action_running and not battle_over and not paused
 
 func _ability_ready(side_index: int, unit_index: int) -> bool:
 	if side_index<0 or side_index>=sides.size(): return false
@@ -1133,13 +1176,36 @@ func _cancel_ability_targeting() -> void:
 	_render()
 
 func _choose_ability_target(target_index: int) -> bool:
-	if not ability_targeting: return false
-	if not _activate_ability(0,ability_source,target_index): return false
+	if not ability_targeting or not _can_act(0): return false
+	if not _ability_ready(0,ability_source) or not _ability_target_options(0,ability_source).has(target_index): return false
+	_animated_ability(0,ability_source,target_index)
+	return true
+
+func _animated_ability(side_index: int, source_index: int, target_index: int) -> bool:
+	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return false
+	if not _ability_target_options(side_index,source_index).has(target_index): return false
+	var source: Dictionary = sides[side_index].active if source_index < 0 else sides[side_index].bench[source_index]
+	var token := generation
+	card_action_running = true
+	busy = true
 	ability_targeting = false
 	ability_source = -2
 	selected_hand = -1
 	_render()
-	return true
+	var revealed: bool = await _show_card_reveal(source,side_index,"ABILITY • "+str(source.ability_name),token)
+	if generation != token: return false
+	card_action_running = false
+	busy = false
+	var activated: bool = revealed and _activate_ability(side_index,source_index,target_index)
+	card_action_running = true
+	busy = true
+	_render()
+	var effects_complete: bool = await _wait_for_battle_effects(token)
+	if generation != token: return false
+	card_action_running = false
+	busy = false
+	_render()
+	return activated and effects_complete
 
 func _activate_ability(side_index: int, source_index: int, target_index: int) -> bool:
 	if not _can_act(side_index) or not _ability_ready(side_index,source_index): return false
@@ -1203,6 +1269,8 @@ func _drain_energy_animation_queue() -> void:
 	var game_token := generation
 	while not energy_animation_queue.is_empty():
 		var event: Dictionary = energy_animation_queue.pop_front()
+		var reveal_complete: bool = await _wait_for_card_reveal(game_token)
+		if fx_token != energy_fx_generation or not reveal_complete: return
 		var coin_complete: bool = await _wait_for_coin_animations(game_token)
 		if fx_token != energy_fx_generation or not coin_complete: return
 		if screen_name != "battle" or board_nodes.is_empty():
@@ -1263,10 +1331,106 @@ func _wait_for_coin_animations(game_token: int) -> bool:
 		await get_tree().process_frame
 	return generation == game_token
 
-func _play_card(side_index: int, index: int) -> bool:
+func _configure_card_reveal_field() -> void:
+	if not is_instance_valid(card_play_overlay) or not is_instance_valid(root_ui): return
+	var rect := _battle_reference_zone(&"enemy_active")
+	for zone_id in [&"player_active",&"enemy_bench",&"player_bench"]:
+		rect = rect.merge(_battle_reference_zone(zone_id))
+	var transform := root_ui.get_global_transform_with_canvas()
+	var mapped := Rect2(transform * rect.position,Vector2.ZERO)
+	for corner in [Vector2(rect.end.x,rect.position.y),rect.end,Vector2(rect.position.x,rect.end.y)]:
+		mapped = mapped.expand(transform * corner)
+	card_play_overlay.configure_field(mapped)
+
+func _cancel_card_presentation() -> void:
+	if is_instance_valid(card_play_overlay): card_play_overlay.cancel()
+	card_reveal_running = false
+	card_action_running = false
+
+func _wait_for_card_reveal(token: int) -> bool:
+	while card_reveal_running and generation == token:
+		await get_tree().process_frame
+	return generation == token
+
+func _wait_for_battle_effects(token: int) -> bool:
+	var coin_complete: bool = await _wait_for_coin_animations(token)
+	if not coin_complete: return false
+	while (energy_animation_running or not energy_animation_queue.is_empty()) and generation == token:
+		await get_tree().process_frame
+	return generation == token
+
+func _show_card_reveal(card: Dictionary, side_index: int, context_label: String, token: int) -> bool:
+	var effects_complete: bool = await _wait_for_battle_effects(token)
+	if not effects_complete or battle_over or screen_name != "battle": return false
+	await _wait_unpaused(token)
+	if generation != token: return false
+	if not show_card_play_animations: return true
+	if not is_instance_valid(card_play_overlay): return false
+	_configure_card_reveal_field()
+	card_reveal_running = true
+	card_reveals_started += 1
+	# play() creates its texture targets before yielding; the existing loader polls them.
+	call_deferred("_start_texture_poll")
+	var completed: bool = await card_play_overlay.play(card,"YOU" if side_index == 0 else "RIVAL",context_label,reduced_motion)
+	if generation != token: return false
+	card_reveal_running = false
+	if completed: card_reveals_completed += 1
+	await _wait_unpaused(token)
+	return completed and generation == token and not battle_over
+
+func _card_play_legal(side_index: int, index: int) -> bool:
+	if side_index < 0 or side_index >= sides.size(): return false
 	if not _can_act(side_index): return false
 	var side: Dictionary = sides[side_index]
 	if index<0 or index>=side.hand.size(): return false
+	var card: Dictionary = side.hand[index]
+	if card.kind == "Fighter": return DB.is_basic(card) and side.bench.size() < 3
+	if card.kind not in ["Support","Item"]: return false
+	return not (card.kind == "Support" and side.support_used) and _utility_can_play(side_index,index)
+
+func _animated_hand_card(side_index: int, index: int, boost_target: int = -2) -> bool:
+	if not _can_act(side_index) or side_index < 0 or side_index >= sides.size(): return false
+	if index < 0 or index >= sides[side_index].hand.size(): return false
+	if boost_target == -2:
+		if not _card_play_legal(side_index,index): return false
+	elif not _boost_targets(side_index,index).has(boost_target) or not _boost_ready(side_index,boost_target):
+		return false
+	var token := generation
+	var card: Dictionary = sides[side_index].hand[index]
+	var context := "BOOST" if boost_target != -2 else ("FIGHTER PLAYED" if card.kind == "Fighter" else str(card.kind)+" PLAYED")
+	card_action_running = true
+	busy = true
+	_render()
+	var revealed: bool = await _show_card_reveal(card,side_index,context,token)
+	if generation != token: return false
+	if not revealed or index >= sides[side_index].hand.size() or not is_same(card,sides[side_index].hand[index]):
+		card_action_running = false
+		busy = false
+		_render()
+		return false
+	# No await occurs in this commit window: only the reserved action can mutate state.
+	card_action_running = false
+	busy = false
+	var committed: bool = _play_card(side_index,index) if boost_target == -2 else _boost(side_index,index,boost_target)
+	card_action_running = true
+	busy = true
+	if side_index == 0:
+		selected_hand = -1
+		if boost_target != -2: selected_board = boost_target
+	_render()
+	await _wait_unpaused(token)
+	if generation != token: return false
+	var effects_complete: bool = await _wait_for_battle_effects(token)
+	if generation != token: return false
+	card_action_running = false
+	busy = false
+	_render()
+	return committed and effects_complete
+
+# Synchronous authoritative rule helper; actual UI/AI uses _animated_hand_card.
+func _play_card(side_index: int, index: int) -> bool:
+	if not _card_play_legal(side_index,index): return false
+	var side: Dictionary = sides[side_index]
 	var card: Dictionary = side.hand[index]
 	if card.kind=="Fighter":
 		# SURGE cards with a Normal counterpart can only enter play by Boosting.
@@ -1553,9 +1717,7 @@ func _clear_statuses(unit: Dictionary) -> void:
 	unit["statuses"] = []
 
 func _player_play() -> void:
-	if _play_card(0,selected_hand):
-		selected_hand=-1
-		_render()
+	await _animated_hand_card(0,selected_hand)
 
 # Retreat cost: Normal fighters pay 1 Energy, SURGE fighters pay 2. Once per turn.
 func _retreat_cost(unit: Dictionary) -> int:
@@ -1724,9 +1886,20 @@ func _player_attack(index: int) -> void:
 	_animated_attack(0,index)
 
 func _animated_attack(side_index: int, index: int, target_index: int = -1) -> void:
+	if not _can_act(side_index) or not _attack_legal(side_index,index): return
 	var token := generation
 	busy=true
+	card_action_running = true
 	attack_animations+=1
+	var attacker: Dictionary = sides[side_index].active
+	_render()
+	var revealed: bool = await _show_card_reveal(attacker,side_index,"ATTACK • "+str(attacker.attacks[index].name),token)
+	if generation != token: return
+	card_action_running = false
+	if not revealed:
+		busy = false
+		_render()
+		return
 	var attack_hits := _attack_coin_allows(side_index)
 	if show_coin_flip_animations and (coin_animation_running or not coin_animation_queue.is_empty()): attack_coin_wait_count += 1
 	var coin_complete: bool = await _wait_for_coin_animations(token)
@@ -1842,20 +2015,23 @@ func _ai_turn(token: int) -> void:
 	var side: Dictionary = sides[1]
 	# Bench basics, Boost into SURGE forms, then play Items and at most one Support.
 	for i in range(side.hand.size()-1,-1,-1):
-		if i < side.hand.size() and DB.is_basic(side.hand[i]) and side.bench.size()<3: _play_card(1,i)
+		if i < side.hand.size() and DB.is_basic(side.hand[i]) and side.bench.size()<3:
+			await _animated_hand_card(1,i)
+			if token != generation or battle_over: return
 	for i in range(side.hand.size()-1,-1,-1):
 		if i >= side.hand.size(): continue
 		for target in _boost_targets(1,i):
-			if _boost(1,i,int(target)): break
+			var boosted: bool = await _animated_hand_card(1,i,int(target))
+			if token != generation or battle_over: return
+			if boosted: break
 	for i in range(side.hand.size()-1,-1,-1):
 		if i >= side.hand.size(): continue
 		if side.hand[i].kind=="Item" or (side.hand[i].kind=="Support" and not side.support_used):
-			if _play_card(1,i) and not pending_utility_choice.is_empty():
-				_render()
-				await _wait_unpaused(token)
-				if token!=generation or battle_over: return
+			await _animated_hand_card(1,i)
+			if token != generation or battle_over: return
 	_attach_energy(1,-1)
-	_ai_use_card_abilities(1)
+	await _ai_use_card_abilities(1)
+	if token != generation or battle_over: return
 	_render()
 	await get_tree().create_timer(0.45).timeout
 	await _wait_unpaused(token)
@@ -1881,7 +2057,9 @@ func _ai_use_card_abilities(side_index: int) -> void:
 		var target_index: int = int(options[0])
 		for candidate in options:
 			if int(opponent.bench[candidate].current_hp) < int(opponent.bench[target_index].current_hp): target_index = int(candidate)
-		_activate_ability(side_index,source_index,target_index)
+		var token := generation
+		await _animated_ability(side_index,source_index,target_index)
+		if token != generation or battle_over: return
 
 func _cost_text(color: String, a: Dictionary) -> String:
 	var cost: int = int(a.cost)
@@ -2015,10 +2193,7 @@ func _boost(side_index: int, hand_index: int, target_index: int) -> bool:
 	return true
 
 func _player_boost(target_index: int) -> void:
-	if _boost(0,selected_hand,target_index):
-		selected_hand = -1
-		selected_board = target_index
-		_render()
+	await _animated_hand_card(0,selected_hand,target_index)
 
 func _attack_target_options(side_index: int) -> Array:
 	var result: Array = [-1]

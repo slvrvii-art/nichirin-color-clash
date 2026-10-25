@@ -151,6 +151,7 @@ func _run() -> void:
 	game.turn_number = 3
 	game.show_coin_flip_animations = true
 	game.show_energy_animations = false
+	game.show_card_play_animations = false
 	game.coin_animation_queue.clear()
 	game.coin_animation_running = false
 	game.coin_flip_overrides = [true]
